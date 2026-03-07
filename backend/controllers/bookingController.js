@@ -1,6 +1,8 @@
 const Booking = require("../models/bookingModel");
 const TripSeat = require("../models/tripseatModel");
 const Trip = require("../models/tripModel");
+const QRCode = require("qrcode");
+const Ticket = require("../models/ticketModel");
 
 exports.createBooking = async (req, res) => {
   try {
@@ -112,20 +114,15 @@ exports.getBookingById = async (req, res) => {
 
 exports.confirmBooking = async (req, res) => {
   try {
-
     const booking = await Booking.findById(req.params.id);
-
     if (!booking) {
       return res.status(404).json({
         message: "Booking not found"
       });
     }
-
     booking.paymentStatus = "paid";
     booking.status = "confirmed";
-
     await booking.save();
-
     await TripSeat.updateMany(
       { _id: { $in: booking.seats } },
       {
@@ -134,19 +131,33 @@ exports.confirmBooking = async (req, res) => {
         reservedUntil: null
       }
     );
-
     await Trip.findByIdAndUpdate(
       booking.trip,
       {
         $inc: { availableSeats: -booking.seats.length }
       }
     );
-
     res.json({
       message: "Booking confirmed",
       booking
     });
-
+    const tickets = [];
+    for (let seatId of booking.seats) {
+      const qrData = JSON.stringify({
+        bookingId: booking._id,
+        trip: booking.trip,
+        seat: seatId
+      });
+      const qrCode = await QRCode.toDataURL(qrData);
+      tickets.push({
+        booking: booking._id,
+        user: booking.user,
+        trip: booking.trip,
+        tripSeat: seatId,
+        qrCode: qrCode
+      });
+    }
+    await Ticket.insertMany(tickets);
   } catch (error) {
     res.status(500).json(error);
   }

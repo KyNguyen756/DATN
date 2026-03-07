@@ -1,12 +1,49 @@
 const Bus = require("../models/busModel");
 
 exports.createBus = async (req, res) => {
+
   try {
-    const bus = await Bus.create(req.body);
-    res.status(201).json(bus);
+
+    const { name, busNumber, totalSeats } = req.body;
+
+    const bus = await Bus.create({
+      name,
+      busNumber,
+      totalSeats
+    });
+
+    // tạo ghế tự động
+    const seats = [];
+
+    const columns = ["A", "B"];
+
+    for (let i = 1; i <= totalSeats; i++) {
+
+      const row = Math.ceil(i / columns.length);
+      const column = columns[(i - 1) % columns.length];
+
+      seats.push({
+        bus: bus._id,
+        seatNumber: `${row}${column}`,
+        row: row,
+        column: column
+      });
+
+    }
+
+    await Seat.insertMany(seats);
+
+    res.status(201).json({
+      bus,
+      seatsCreated: seats.length
+    });
+
   } catch (error) {
+
     res.status(500).json(error);
+
   }
+
 };
 
 exports.getBuses = async (req, res) => {
