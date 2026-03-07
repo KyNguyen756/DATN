@@ -43,6 +43,12 @@ const UserSchema = new mongoose.Schema(
 
     phoneNumber: {
       type: String
+    },
+
+    role: {
+      type:String,
+      enum: ["user", "admin"],
+      default: "admin"
     }
   },
   { timestamps: true }
