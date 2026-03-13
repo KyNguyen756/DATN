@@ -25,6 +25,7 @@ const fromRequest = (body) => {
 };
 
 exports.createBus = async (req, res) => {
+
   try {
     const data = fromRequest(req.body);
     const bus = await Bus.create(data);
@@ -46,6 +47,7 @@ exports.createBus = async (req, res) => {
   } catch (error) {
     res.status(500).json(error?.message || error);
   }
+
 };
 
 exports.getBuses = async (req, res) => {
