@@ -1,8 +1,8 @@
 const multer = require("multer");
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const { createCloudinaryStorage } = require("multer-storage-cloudinary");
 const cloudinary = require("../config/cloudinary");
 
-const storage = new CloudinaryStorage({
+const storage = createCloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "bus-ticket/avatars",

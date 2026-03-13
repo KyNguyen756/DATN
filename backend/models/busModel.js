@@ -15,7 +15,7 @@ const busSchema = new mongoose.Schema({
 
   type: {
     type: String,
-    enum: ["seater", "sleeper"],
+    enum: ["seater", "sleeper", "limousine", "chair", "vip"],
     default: "seater"
   },
 

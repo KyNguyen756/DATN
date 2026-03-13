@@ -11,9 +11,9 @@ router.post(
 )
 
 //LOGIN
-router.post(
-    "/login",
-    authController.login
-)
+router.post("/login", authController.login);
+
+// LOGIN ADMIN - Chỉ quản trị viên
+router.post("/login-admin", authController.loginAdmin);
 
 module.exports = router;

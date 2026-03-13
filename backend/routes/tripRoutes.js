@@ -1,16 +1,16 @@
 const router = require("express").Router();
 
 const tripController = require("../controllers/tripController");
-const auth = require("../middleware/authMiddleware");
+const { requireAdmin } = require("../middleware/authMiddleware");
 
-router.post("/", auth, tripController.createTrip);
+router.post("/", requireAdmin, tripController.createTrip);
 
 router.get("/", tripController.getTrips);
 
 router.get("/:id", tripController.getTripById);
 
-router.put("/:id", auth, tripController.updateTrip);
+router.put("/:id", requireAdmin, tripController.updateTrip);
 
-router.delete("/:id", auth, tripController.deleteTrip);
+router.delete("/:id", requireAdmin, tripController.deleteTrip);
 
 module.exports = router;

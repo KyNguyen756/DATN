@@ -1,0 +1,26 @@
+.sidebar {
+  min-height: 100vh;
+}
+
+.sidebar .logo {
+  padding: 20px;
+  text-align: center;
+  border-bottom: 1px solid #434343;
+}
+
+.sidebar .logo h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 16px;
+}
+
+.sidebar-footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  border-top: 1px solid #434343;
+}
+
+.sidebar-footer .ant-menu {
+  border-right: none !important;
+}

@@ -3,15 +3,12 @@ const router = require("express").Router();
 const userController = require("../controllers/userController");
 
 const auth = require("../middleware/authMiddleware");
+const { requireAdmin } = require("../middleware/authMiddleware");
 
 const upload = require("../utils/uploadAvatar");
 
-// CRUD
-router.get(
-  "/",
-  auth,
-  userController.getUsers
-);
+// GET all users (admin only - cho quản lý hành khách)
+router.get("/", requireAdmin, userController.getUsers);
 
 router.get(
   "/:id",

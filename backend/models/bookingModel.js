@@ -10,13 +10,13 @@ const bookingSchema = new mongoose.Schema({
 
   trip: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Trip",
+    ref: "TripModel",
     required: true
   },
 
   seats: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "TripSeat"
+    ref: "TripSeatModel"
   }],
 
   totalPrice: {
@@ -24,11 +24,17 @@ const bookingSchema = new mongoose.Schema({
     required: true
   },
 
+  passengerName: { type: String },
+  passengerPhone: { type: String },
+  passengerEmail: { type: String },
+
   status: {
     type: String,
     enum: ["pending", "confirmed", "cancelled"],
     default: "pending"
-  }
+  },
+
+  paymentStatus: { type: String, default: "unpaid" }
 
 }, { timestamps: true });
 

@@ -27,6 +27,12 @@ const UserSchema = new mongoose.Schema(
       required: true
     },
 
+    email: {
+      type: String,
+      unique: true,
+      sparse: true
+    },
+
     password: {
       type: String,
       required: true
@@ -43,6 +49,12 @@ const UserSchema = new mongoose.Schema(
 
     phoneNumber: {
       type: String
+    },
+
+    role: {
+      type: String,
+      enum: ["passenger", "admin"],
+      default: "passenger"
     }
   },
   { timestamps: true }

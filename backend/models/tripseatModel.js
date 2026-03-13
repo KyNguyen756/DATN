@@ -16,16 +16,25 @@ const tripSeatSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ["available", "locked", "booked"],
+    enum: ["available", "locked", "reserved", "booked"],
     default: "available"
   },
 
   lockedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "UserModel"
+    ref: "User"
   },
 
   lockedUntil: {
+    type: Date
+  },
+
+  reservedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
+
+  reservedUntil: {
     type: Date
   }
 

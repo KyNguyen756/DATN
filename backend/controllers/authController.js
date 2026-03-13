@@ -10,19 +10,26 @@ exports.register = async (req, res) => {
       firstName,
       lastName,
       username,
+      email,
       password,
       birthDate,
       cccd,
       phoneNumber
     } = req.body;
 
-    const exist = await User.findOne({ username });
+    const q = [{ username: username || email }];
+    if (email) q.push({ email });
+    const exist = await User.findOne({ $or: q });
 
     if (exist) {
       return res.status(400).json("Username already exists");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    const cccdValue =
+      cccd ||
+      `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 
     let avatar;
 
@@ -37,29 +44,73 @@ exports.register = async (req, res) => {
       avatar,
       firstName,
       lastName,
-      username,
+      username: username || email,
+      email: email || username,
       password: hashedPassword,
       birthDate,
-      cccd,
+      cccd: cccdValue,
       phoneNumber
     });
 
     res.json(user);
 
   } catch (error) {
-    res.status(500).json(error);
+    if (error && error.code === 11000) {
+      return res
+        .status(400)
+        .json("Email hoặc CCCD/CMND đã được sử dụng");
+    }
+    res.status(500).json("Internal server error");
   }
 };
 
 // LOGIN
 exports.login = async (req, res) => {
 
-  const { username, password } = req.body;
+  const { username, email, password } = req.body;
+  const loginId = username || email;
 
-  const user = await User.findOne({ username });
+  const user = await User.findOne({
+    $or: [{ username: loginId }, { email: loginId }]
+  });
 
   if (!user) {
     return res.status(404).json("User not found");
+  }
+
+  const valid = await bcrypt.compare(password, user.password);
+
+  if (!valid) {
+    return res.status(400).json("Wrong password");
+  }
+
+  const token = jwt.sign(
+    { id: user._id },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  res.json({
+    token,
+    user
+  });
+};
+
+// LOGIN ADMIN - Chỉ cho phép tài khoản role admin
+exports.loginAdmin = async (req, res) => {
+  const { username, email, password } = req.body;
+  const loginId = username || email;
+
+  const user = await User.findOne({
+    $or: [{ username: loginId }, { email: loginId }]
+  });
+
+  if (!user) {
+    return res.status(404).json("User not found");
+  }
+
+  if (user.role !== "admin") {
+    return res.status(403).json("Chỉ quản trị viên mới được đăng nhập trang quản trị");
   }
 
   const valid = await bcrypt.compare(password, user.password);

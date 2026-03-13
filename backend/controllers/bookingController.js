@@ -2,10 +2,26 @@ const Booking = require("../models/bookingModel");
 const TripSeat = require("../models/tripseatModel");
 const Trip = require("../models/tripModel");
 
+exports.getAllBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find()
+      .populate("user", "firstName lastName username phoneNumber")
+      .populate("trip")
+      .populate({
+        path: "seats",
+        populate: { path: "seat" }
+      })
+      .sort({ createdAt: -1 });
+    res.json(bookings);
+  } catch (error) {
+    res.status(500).json(error);
+  }
+};
+
 exports.createBooking = async (req, res) => {
   try {
 
-    const { tripId, seatIds } = req.body;
+    const { tripId, seatIds, passengerName, passengerPhone, passengerEmail } = req.body;
 
     // lấy ghế
     const seats = await TripSeat.find({
@@ -39,6 +55,9 @@ exports.createBooking = async (req, res) => {
       trip: tripId,
       seats: seatIds,
       totalPrice,
+      passengerName,
+      passengerPhone,
+      passengerEmail,
       status: "pending"
     });
 

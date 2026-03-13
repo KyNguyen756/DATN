@@ -8,6 +8,11 @@ const tripSchema = new mongoose.Schema({
     required: true
   },
 
+  route: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Route"
+  },
+
   departureLocation: {
     type: String,
     required: true
