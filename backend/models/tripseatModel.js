@@ -4,13 +4,13 @@ const tripSeatSchema = new mongoose.Schema({
 
   trip: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "TripModel",
+    ref: "Trip",
     required: true
   },
 
   seat: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "SeatModel",
+    ref: "Seat",
     required: true
   },
 
@@ -22,7 +22,7 @@ const tripSeatSchema = new mongoose.Schema({
 
   lockedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "UserModel"
+    ref: "User"
   },
 
   lockedUntil: {
@@ -31,4 +31,4 @@ const tripSeatSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-module.exports = mongoose.model("TripSeatModel", tripSeatSchema);
+module.exports = mongoose.model("TripSeat", tripSeatSchema);

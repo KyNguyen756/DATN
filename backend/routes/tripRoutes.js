@@ -1,16 +1,35 @@
-const router = require("express").Router();
+const express = require("express");
+
+const router = express.Router();
 
 const tripController = require("../controllers/tripController");
-const auth = require("../middleware/authMiddleware");
 
-router.post("/", auth, tripController.createTrip);
+const authMiddleware = require("../middleware/authMiddleware");
+const adminMiddleware = require("../middleware/adminMiddleware");
+
+router.post(
+  "/",
+  authMiddleware,
+  adminMiddleware,
+  tripController.createTrip
+);
+
+router.put(
+  "/:id",
+  authMiddleware,
+  adminMiddleware,
+  tripController.updateTrip
+);
+
+router.delete(
+  "/:id",
+  authMiddleware,
+  adminMiddleware,
+  tripController.deleteTrip
+);
 
 router.get("/", tripController.getTrips);
 
 router.get("/:id", tripController.getTripById);
 
-router.put("/:id", auth, tripController.updateTrip);
-
-router.delete("/:id", auth, tripController.deleteTrip);
-
-module.exports = router;
+module.exports=router;

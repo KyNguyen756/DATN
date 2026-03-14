@@ -1,94 +1,99 @@
 const Bus = require("../models/busModel");
+const Seat = require("../models/seatModel");
 
 exports.createBus = async (req, res) => {
 
   try {
 
-    const { name, busNumber, totalSeats } = req.body;
+    const bus = await Bus.create(req.body);
 
-    const bus = await Bus.create({
-      name,
-      busNumber,
-      totalSeats
-    });
-
-    // tạo ghế tự động
-    const seats = [];
-
-    const columns = ["A", "B"];
-
-    for (let i = 1; i <= totalSeats; i++) {
-
-      const row = Math.ceil(i / columns.length);
-      const column = columns[(i - 1) % columns.length];
-
-      seats.push({
-        bus: bus._id,
-        seatNumber: `${row}${column}`,
-        row: row,
-        column: column
-      });
-
-    }
-
-    await Seat.insertMany(seats);
-
-    res.status(201).json({
-      bus,
-      seatsCreated: seats.length
-    });
+    res.json(bus);
 
   } catch (error) {
 
-    res.status(500).json(error);
+    res.status(500).json({ error: error.message });
 
   }
 
 };
 
 exports.getBuses = async (req, res) => {
-  try {
-    const buses = await Bus.find();
-    res.json(buses);
-  } catch (error) {
-    res.status(500).json(error);
-  }
+
+  const buses = await Bus.find();
+
+  res.json(buses);
+
 };
 
 exports.getBusById = async (req, res) => {
-  try {
-    const bus = await Bus.findById(req.params.id);
-    res.json(bus);
-  } catch (error) {
-    res.status(500).json(error);
-  }
+
+  const bus = await Bus.findById(req.params.id);
+
+  res.json(bus);
+
 };
 
 exports.updateBus = async (req, res) => {
-  try {
-    const bus = await Bus.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    res.json(bus);
-  } catch (error) {
-    res.status(500).json(error);
-  }
+
+  const bus = await Bus.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    { new: true }
+  );
+
+  res.json(bus);
+
 };
 
 exports.deleteBus = async (req, res) => {
 
-  try {
+  await Bus.findByIdAndDelete(req.params.id);
 
-    await Bus.findByIdAndDelete(req.params.id);
+  res.json({
+    message: "Bus deleted"
+  });
 
-    res.json("Bus deleted");
+};
 
-  } catch (error) {
+exports.generateSeats = async (req, res) => {
 
-    res.status(500).json(error);
+  const { busId } = req.params;
+
+  const bus = await Bus.findById(busId);
+
+  const seats = [];
+
+  for (let r = 1; r <= bus.seatLayout.rows; r++) {
+
+    for (let c = 1; c <= bus.seatLayout.columns; c++) {
+
+      seats.push({
+        bus: busId,
+        seatNumber: `R${r}C${c}`,
+        row: r,
+        column: c
+      });
+
+    }
 
   }
 
+  await Seat.insertMany(seats);
+
+  res.json({
+    message: "Seats generated",
+    total: seats.length
+  });
+
 };
+
+exports.getSeats = async (req, res) => {
+
+  const seats = await Seat.find({
+    bus: req.params.busId
+  });
+
+  res.json(seats);
+
+};
+

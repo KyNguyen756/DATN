@@ -4,7 +4,7 @@ const seatSchema = new mongoose.Schema({
 
   bus: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "BusModel",
+    ref: "Bus",
     required: true
   },
 
@@ -13,15 +13,9 @@ const seatSchema = new mongoose.Schema({
     required: true
   },
 
-  row: {
-    type: Number,
-    required: true
-  },
+  row: Number,
 
-  column: {
-    type: String,
-    required: true
-  },
+  column: Number,
 
   type: {
     type: String,
@@ -31,4 +25,4 @@ const seatSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-module.exports = mongoose.model("SeatModel", seatSchema);
+module.exports = mongoose.model("Seat", seatSchema);

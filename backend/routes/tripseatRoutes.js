@@ -1,11 +1,28 @@
-const router = require("express").Router();
-const tripSeatController = require("../controllers/tripseatController");
-const auth = require("../middleware/authMiddleware");
+const express = require("express");
 
-router.get("/:tripId", tripSeatController.getSeatsByTrip);
+const router = express.Router();
 
-router.post("/lock", auth, tripSeatController.lockSeat);
+const tripSeatController = require("../controllers/tripSeatController");
 
-router.post("/unlock", auth, tripSeatController.unlockSeat);
+const authMiddleware = require("../middleware/authMiddleware");
+const adminMiddleware = require("../middleware/adminMiddleware");
+
+router.post(
+  "/generate/:tripId",
+  authMiddleware,
+  adminMiddleware,
+  tripSeatController.generateTripSeats
+);
+
+router.get(
+  "/:tripId",
+  tripSeatController.getTripSeats
+);
+
+router.post(
+  "/lock/:tripSeatId",
+  authMiddleware,
+  tripSeatController.lockSeat
+);
 
 module.exports = router;

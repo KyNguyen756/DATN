@@ -7,16 +7,10 @@ const busSchema = new mongoose.Schema({
     required: true
   },
 
-  busNumber: {
+  licensePlate: {
     type: String,
     required: true,
     unique: true
-  },
-
-  type: {
-    type: String,
-    enum: ["seater", "sleeper"],
-    default: "seater"
   },
 
   totalSeats: {
@@ -25,9 +19,22 @@ const busSchema = new mongoose.Schema({
   },
 
   seatLayout: {
-    type: String
+    rows: Number,
+    columns: Number
+  },
+
+  type: {
+    type: String,
+    enum: ["seater", "sleeper", "limousine"],
+    default: "seater"
+  },
+
+  status: {
+    type: String,
+    enum: ["active", "inactive"],
+    default: "active"
   }
 
 }, { timestamps: true });
 
-module.exports = mongoose.model("BusModel", busSchema);
+module.exports = mongoose.model("Bus", busSchema);

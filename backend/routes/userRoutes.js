@@ -1,41 +1,21 @@
-const router = require("express").Router();
-
+const express = require("express");
+const router = express.Router();
+const authMiddleware = require("../middleware/authMiddleware");
+const upload = require("../middleware/uploadMiddleware");
 const userController = require("../controllers/userController");
+const adminMiddleware = require("../middleware/adminMiddleware");
 
-const auth = require("../middleware/authMiddleware");
+router.get("/profile", authMiddleware, userController.getProfile);
+router.put("/profile", authMiddleware, userController.updateProfile);
 
-const upload = require("../utils/uploadAvatar");
-
-// CRUD
-router.get(
-  "/",
-  auth,
-  userController.getUsers
-);
-
-router.get(
-  "/:id",
-  auth,
-  userController.getUserById
-);
-
-router.put(
-  "/profile",
-  auth,
-  userController.updateProfile
-);
-
-router.put(
+router.post(
   "/avatar",
-  auth,
+  authMiddleware,
   upload.single("avatar"),
-  userController.updateAvatar
+  userController.uploadAvatar
 );
 
-router.delete(
-  "/:id",
-  auth,
-  userController.deleteUser
-);
+router.get("/", authMiddleware, adminMiddleware, userController.getAllUsers);
+router.delete("/:id", authMiddleware, userController.deleteUser);
 
 module.exports = router;
