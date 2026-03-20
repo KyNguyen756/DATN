@@ -24,6 +24,13 @@ const ticketSchema = new mongoose.Schema({
     type: String
   },
 
+  // Short human-readable code shown to user, e.g. VXB-A3F9K2
+  code: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+
   status: {
     type: String,
     enum: ["valid", "used", "cancelled"],

@@ -29,9 +29,19 @@ const tripSchema = new mongoose.Schema({
     type: Date
   },
 
+  estimatedDuration: {
+    type: Number, // duration in minutes
+    default: 0
+  },
+
   price: {
     type: Number,
     required: true
+  },
+
+  cancellationPolicy: {
+    type: String,
+    default: "Hủy trước 24h: hoàn 80%. Hủy trước 2h: hoàn 50%. Không hoàn sau khi xe xuất phát."
   },
 
   status: {

@@ -36,7 +36,14 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     enum: ["active", "cancelled"],
     default: "active"
-  }
+  },
+
+  // Passenger contact info collected at checkout
+  passengerName: { type: String, default: "" },
+  passengerPhone: { type: String, default: "" },
+  passengerEmail: { type: String, default: "" },
+  paymentMethod: { type: String, default: "cod" },
+  note: { type: String, default: "" }
 
 }, { timestamps: true });
 

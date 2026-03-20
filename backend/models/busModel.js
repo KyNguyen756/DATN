@@ -29,6 +29,21 @@ const busSchema = new mongoose.Schema({
     default: "seater"
   },
 
+  amenities: {
+    type: [String],
+    default: []
+  },
+
+  driver: {
+    type: String,
+    default: ""
+  },
+
+  driverPhone: {
+    type: String,
+    default: ""
+  },
+
   status: {
     type: String,
     enum: ["active", "inactive"],

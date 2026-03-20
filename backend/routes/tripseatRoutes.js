@@ -1,28 +1,27 @@
 const express = require("express");
-
 const router = express.Router();
-
-const tripSeatController = require("../controllers/tripSeatController");
-
+const tripseatController = require("../controllers/tripseatController");
 const authMiddleware = require("../middleware/authMiddleware");
 const adminMiddleware = require("../middleware/adminMiddleware");
+const staffMiddleware = require("../middleware/staffMiddleware");
 
+// Admin: generate seats for a trip
 router.post(
   "/generate/:tripId",
   authMiddleware,
   adminMiddleware,
-  tripSeatController.generateTripSeats
+  tripseatController.generateTripSeats
 );
 
-router.get(
-  "/:tripId",
-  tripSeatController.getTripSeats
-);
+// Staff/Admin: get all currently locked seats (must be before /:tripId routes!)
+router.get("/locked", authMiddleware, staffMiddleware, tripseatController.getLockedSeats);
 
-router.post(
-  "/lock/:tripSeatId",
-  authMiddleware,
-  tripSeatController.lockSeat
-);
+// Public: get all seats for a trip (with auto-release of expired locks)
+router.get("/:tripId/count", tripseatController.getSeatCount);
+router.get("/:tripId", tripseatController.getTripSeats);
+
+// User: lock / unlock a seat
+router.post("/lock/:tripSeatId", authMiddleware, tripseatController.lockSeat);
+router.delete("/unlock/:tripSeatId", authMiddleware, tripseatController.unlockSeat);
 
 module.exports = router;
