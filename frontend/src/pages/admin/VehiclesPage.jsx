@@ -30,7 +30,8 @@ export default function VehiclesPage() {
     setLoading(true);
     try {
       const res = await api.get('/buses');
-      setBuses(res.data);
+      // API trả về { buses: [...], pagination: {...} } — chỉ lấy mảng buses
+      setBuses(Array.isArray(res.data) ? res.data : (res.data?.buses || []));
     } catch (err) {
       setError(err.response?.data?.message || 'Không thể tải danh sách xe.');
     } finally {

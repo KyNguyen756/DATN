@@ -19,6 +19,8 @@ export default function LoginPage() {
   });
 
   const from = location.state?.from?.pathname || '/';
+  const fromState = location.state?.from;  // full location object
+  const comingFromTrip = from.startsWith('/trip/');
 
   const handleChange = (e) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -103,6 +105,29 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {/* Trip context banner */}
+        {comingFromTrip && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px',
+            padding: '12px 14px', borderRadius: '10px',
+            background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)',
+            border: '1px solid #BFDBFE', fontSize: '12px', color: '#1D4ED8',
+          }}>
+            <Bus size={16} style={{ flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: '700', marginBottom: '2px' }}>Đăng nhập để đặt vé</div>
+              <div style={{ opacity: 0.8 }}>Bạn cần tài khoản để giữ ghế và thanh toán.</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(from)}
+              style={{ background: 'none', border: 'none', color: '#1D4ED8', fontWeight: '700', cursor: 'pointer', fontSize: '11px', whiteSpace: 'nowrap', textDecoration: 'underline' }}
+            >
+              ← Quay lại
+            </button>
+          </div>
+        )}
+
         {/* Error alert */}
         {error && (
           <div style={{
@@ -162,7 +187,7 @@ export default function LoginPage() {
                 value={form.password}
                 onChange={handleChange}
                 required
-                minLength={6}
+                minLength={5}
                 style={{ paddingRight: '44px' }}
               />
               <button

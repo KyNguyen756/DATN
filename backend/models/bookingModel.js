@@ -2,10 +2,11 @@ const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema({
 
+  // user can be null for walk-in (counter) bookings
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true
+    default: null
   },
 
   trip: {
@@ -38,12 +39,33 @@ const bookingSchema = new mongoose.Schema({
     default: "active"
   },
 
-  // Passenger contact info collected at checkout
-  passengerName: { type: String, default: "" },
+  // Passenger contact info (required for counter / walk-in)
+  passengerName:  { type: String, default: "" },
   passengerPhone: { type: String, default: "" },
   passengerEmail: { type: String, default: "" },
-  paymentMethod: { type: String, default: "cod" },
-  note: { type: String, default: "" }
+  passengerIdCard: { type: String, default: "" }, // CCCD / CMND
+
+  // Payment info
+  paymentMethod: {
+    type: String,
+    enum: ["cod", "counter", "bank_transfer", "card", "online"],
+    default: "cod"
+  },
+  note: { type: String, default: "" },
+
+  // Counter sales tracking
+  source: {
+    type: String,
+    enum: ["online", "counter"],
+    default: "online"
+  },
+
+  // Staff who sold the ticket (populated from req.user at counter sale)
+  soldBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null
+  }
 
 }, { timestamps: true });
 

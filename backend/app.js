@@ -11,6 +11,8 @@ const bookingRoutes = require("./routes/bookingRoutes");
 const ticketRoutes = require("./routes/ticketRoutes");
 const statsRoutes = require("./routes/statsRoutes");
 const promotionRoutes = require("./routes/promotionRoutes");
+const busCompanyRoutes   = require("./routes/busCompanyRoutes");
+const tripTemplateRoutes = require("./routes/tripTemplateRoutes");
 
 const app = express();
 
@@ -31,6 +33,8 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/promotions", promotionRoutes);
+app.use("/api/bus-companies",   busCompanyRoutes);
+app.use("/api/trip-templates",  tripTemplateRoutes);
 
 // Central error handler — catches errors thrown by asyncHandler
 app.use((err, req, res, next) => {

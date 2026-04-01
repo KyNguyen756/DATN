@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   Star, Clock, MapPin, Shield, Users, ChevronRight,
   CheckCircle, Bus, AlertCircle, Loader
@@ -18,6 +18,7 @@ const fmtDuration = (dep, arr, est) => {
 export default function TripDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
   const { token } = useAuth();
 
   const [trip, setTrip] = useState(null);
@@ -73,7 +74,7 @@ export default function TripDetailPage() {
   const toggleSeat = async (ts) => {
     if (ts.status === 'booked') return;
 
-    // Deselect
+    // Deselect — allow without login
     if (selectedSeats.find(s => s._id === ts._id)) {
       try {
         await api.delete(`/trip-seats/unlock/${ts._id}`);
@@ -85,7 +86,12 @@ export default function TripDetailPage() {
       return;
     }
 
-    if (!token) { navigate('/login'); return; }
+    if (!token) {
+      // Nhắc nhở nhẹ nhàng — không redirect, chỉ show tích chọn ghế không được lock
+      alert('Vui lòng đăng nhập để giữ ghế và đặt vé.');
+      navigate('/login', { state: { from: location } });
+      return;
+    }
     if (selectedSeats.length >= 5) return;
 
     setLockLoading(ts._id);
@@ -392,17 +398,30 @@ export default function TripDetailPage() {
                 className="btn btn-primary w-full"
                 disabled={selectedSeats.length === 0}
                 style={{ justifyContent: 'center', opacity: selectedSeats.length === 0 ? 0.5 : 1 }}
-                onClick={() => navigate('/booking', {
-                  state: {
-                    tripId: trip._id,
-                    seatIds: selectedSeats.map(s => s._id),
-                    selectedSeats,
-                    trip
+                onClick={() => {
+                  if (!token) {
+                    // Lưu state hiện tại để sau khi đăng nhập sẽ quay lại
+                    navigate('/login', { state: { from: location } });
+                    return;
                   }
-                })}
+                  navigate('/booking', {
+                    state: {
+                      tripId: trip._id,
+                      seatIds: selectedSeats.map(s => s._id),
+                      selectedSeats,
+                      trip
+                    }
+                  });
+                }}
               >
                 Đặt vé ngay ({selectedSeats.length} ghế)
               </button>
+
+              {!token && selectedSeats.length > 0 && (
+                <div style={{ marginTop: '10px', padding: '10px 12px', borderRadius: '8px', background: 'var(--warning-light)', color: 'var(--warning)', fontSize: '12px', fontWeight: '600', textAlign: 'center' }}>
+                  ⚠️ Bạn cần đăng nhập để giữ ghế và thanh toán
+                </div>
+              )}
 
               <div className="flex items-center gap-2" style={{ marginTop: '12px', color: 'var(--gray-500)', fontSize: '12px', justifyContent: 'center' }}>
                 <Shield size={12} /> Thanh toán bảo mật 256-bit SSL

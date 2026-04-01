@@ -125,14 +125,37 @@ export default function MyTicketsPage() {
                   <div style={{ padding: '20px 24px', borderBottom: '3px dashed var(--gray-200)' }}>
                     <div className="flex items-center justify-between" style={{ marginBottom: '14px' }}>
                       <div className="flex items-center gap-3">
-                        <div style={{
-                          width: '36px', height: '36px', borderRadius: '8px', fontWeight: '800',
-                          background: 'var(--primary-bg)', color: 'var(--primary)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>{trip?.bus?.name?.[0] || 'X'}</div>
+                        {/* Logo nhà xe */}
+                        {trip?.busCompany?.logo ? (
+                          <img
+                            src={trip.busCompany.logo}
+                            alt={trip.busCompany.name}
+                            style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'contain', background: 'var(--gray-50)', border: '1px solid var(--gray-100)', padding: '2px' }}
+                          />
+                        ) : (
+                          <div style={{
+                            width: '40px', height: '40px', borderRadius: '8px', fontWeight: '800',
+                            background: 'var(--primary-bg)', color: 'var(--primary)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px',
+                          }}>{trip?.busCompany?.name?.[0] || trip?.bus?.name?.[0] || 'X'}</div>
+                        )}
                         <div>
-                          <div style={{ fontWeight: '700', fontSize: '14px' }}>{trip?.bus?.name || 'Nhà xe'}</div>
-                          <div style={{ fontSize: '12px', color: 'var(--gray-500)' }}>{trip?.bus?.type || ''}</div>
+                          <div style={{ fontWeight: '700', fontSize: '14px' }}>
+                            {trip?.busCompany?.shortName || trip?.busCompany?.name || trip?.bus?.name || 'Nhà xe'}
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--gray-500)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span>{trip?.bus?.type || ''}</span>
+                            {trip?.bus?.licensePlate && (
+                              <span style={{ fontFamily: 'monospace', fontWeight: '700', color: 'var(--gray-700)', background: 'var(--gray-100)', padding: '1px 6px', borderRadius: '4px', fontSize: '11px' }}>
+                                {trip.bus.licensePlate}
+                              </span>
+                            )}
+                          </div>
+                          {trip?.bus?.driver && (
+                            <div style={{ fontSize: '11px', color: 'var(--gray-500)', marginTop: '2px' }}>
+                              🧑‍✈️ {trip.bus.driver}{trip?.bus?.driverPhone ? ` · ${trip.bus.driverPhone}` : ''}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <span className={`badge ${sc.cls}`}><Icon size={10} /> {sc.label}</span>

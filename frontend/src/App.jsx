@@ -15,9 +15,11 @@ import LoginPage from './pages/customer/LoginPage';
 
 // Staff Pages
 import StaffDashboard from './pages/staff/StaffDashboard';
-import QuickSalePage from './pages/staff/QuickSalePage';
-import CheckInPage from './pages/staff/CheckInPage';
-import HoldSeatPage from './pages/staff/HoldSeatPage';
+import CounterSalePage from './pages/staff/CounterSalePage';
+import QuickSalePage  from './pages/staff/QuickSalePage';
+import CheckInPage    from './pages/staff/CheckInPage';
+import HoldSeatPage   from './pages/staff/HoldSeatPage';
+import SeatMapDemo    from './pages/staff/SeatMapDemo'; // dev-only
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -29,6 +31,11 @@ import PromotionsPage from './pages/admin/PromotionsPage';
 import ReportsPage from './pages/admin/ReportsPage';
 import SettingsPage from './pages/admin/SettingsPage';
 import StationsPage from './pages/admin/StationsPage';
+import BusCompanyList   from './pages/admin/BusCompanyList';
+import BusCompanyForm   from './pages/admin/BusCompanyForm';
+import BusCompanyDetail from './pages/admin/BusCompanyDetail';
+import TripTemplateList from './pages/admin/TripTemplateList';
+import TripTemplateForm from './pages/admin/TripTemplateForm';
 
 import './index.css';
 
@@ -43,10 +50,8 @@ function App() {
           <Route path="trip/:id" element={<TripDetailPage />} />
           <Route path="login" element={<LoginPage />} />
 
-          {/* Require login */}
-          <Route path="booking" element={
-            <ProtectedRoute><BookingPage /></ProtectedRoute>
-          } />
+          {/* booking: không wrap ProtectedRoute — redirect xử lý bên trong TripDetailPage */}
+          <Route path="booking" element={<BookingPage />} />
           <Route path="my-tickets" element={
             <ProtectedRoute><MyTicketsPage /></ProtectedRoute>
           } />
@@ -60,9 +65,11 @@ function App() {
           <ProtectedRoute role="staff"><StaffLayout /></ProtectedRoute>
         }>
           <Route index element={<StaffDashboard />} />
-          <Route path="quick-sale" element={<QuickSalePage />} />
-          <Route path="check-in" element={<CheckInPage />} />
-          <Route path="hold-seats" element={<HoldSeatPage />} />
+          <Route path="counter-sale"  element={<CounterSalePage />} />
+          <Route path="quick-sale"   element={<QuickSalePage />} />
+          <Route path="check-in"     element={<CheckInPage />} />
+          <Route path="hold-seats"   element={<HoldSeatPage />} />
+          <Route path="seat-demo"    element={<SeatMapDemo />} /> {/* dev-only */}
         </Route>
 
         {/* Admin Dashboard — requires admin role */}
@@ -78,6 +85,15 @@ function App() {
           <Route path="reports" element={<ReportsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="stations" element={<StationsPage />} />
+          {/* Bus Company management */}
+          <Route path="bus-companies"          element={<BusCompanyList />} />
+          <Route path="bus-companies/new"      element={<BusCompanyForm />} />
+          <Route path="bus-companies/:id"      element={<BusCompanyDetail />} />
+          <Route path="bus-companies/:id/edit" element={<BusCompanyForm />} />
+          {/* Trip Template management */}
+          <Route path="trip-templates"          element={<TripTemplateList />} />
+          <Route path="trip-templates/new"      element={<TripTemplateForm />} />
+          <Route path="trip-templates/:id/edit" element={<TripTemplateForm />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

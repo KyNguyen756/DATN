@@ -525,3 +525,53 @@ tbody tr:last-child td {
   font-size: 16px;
   flex-shrink: 0;
 }
+
+/* ============ THERMAL PRINT — 80mm ============ */
+
+/* Hide print area from screen at all times */
+#counter-print-area {
+  display: none !important;
+}
+
+@media print {
+  /* Hide everything except the print area */
+  body > *:not(#counter-print-root) {
+    display: none !important;
+  }
+  #counter-print-root,
+  #counter-print-area {
+    display: block !important;
+    position: fixed;
+    inset: 0;
+  }
+
+  /* Page size: 80mm wide, auto height */
+  @page {
+    size: 80mm auto;
+    margin: 4mm;
+  }
+
+  /* Reset body for print */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 10pt;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Remove shadows, gradients, hover on print */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    background-image: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Ticket-specific overrides */
+  #counter-print-area * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

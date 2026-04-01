@@ -25,6 +25,14 @@ const stationSchema = new mongoose.Schema({
 
   longitude: Number,
 
+  // Many-to-many back-reference to BusCompany
+  busCompanies: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "BusCompany"
+    }
+  ],
+
   status: {
     type: String,
     enum: ["active", "inactive"],

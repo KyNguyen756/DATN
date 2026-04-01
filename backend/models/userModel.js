@@ -28,6 +28,21 @@ const userSchema = new mongoose.Schema({
     default: "user"
   },
 
+  // RBAC: assigned bus company (for staff/admin)
+  busCompany: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "BusCompany",
+    default: null
+  },
+
+  // Stations this user manages (subset of busCompany.stations)
+  managedStations: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Station"
+    }
+  ],
+
   status: {
     type: String,
     enum: ["active", "locked"],

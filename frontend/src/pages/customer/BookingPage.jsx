@@ -44,7 +44,7 @@ export default function BookingPage() {
         phone: p.phone || prev.phone,
         email: p.user?.email || prev.email,
       }));
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   const handleConfirm = async () => {
@@ -66,7 +66,8 @@ export default function BookingPage() {
 
       // 2. Generate tickets + QR codes
       const ticketsRes = await api.post(`/tickets/${bookingId}`);
-      setCreatedTickets(ticketsRes.data);
+      console.log("ticketsRes:", ticketsRes.data);
+      setCreatedTickets(ticketsRes.data.tickets || ticketsRes.data);
 
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Đặt vé thất bại, vui lòng thử lại.');

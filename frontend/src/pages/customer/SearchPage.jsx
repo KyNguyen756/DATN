@@ -186,10 +186,10 @@ export default function SearchPage() {
   useEffect(() => {
     if (from || to || date) fetchTrips();
     else {
-      // Load all trips to show as browse mode
+      // Load all trips to show as browse mode - dùng endpoint public (không cần login)
       setLoading(true);
-      api.get('/trips', { params: { limit: 20 } })
-        .then(res => setTrips(res.data?.trips || res.data || []))
+      api.get('/trips/search', { params: {} })
+        .then(res => setTrips(Array.isArray(res.data) ? res.data.slice(0, 20) : (res.data?.trips || []).slice(0, 20)))
         .catch(() => {})
         .finally(() => setLoading(false));
     }

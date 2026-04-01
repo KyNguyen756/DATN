@@ -1,47 +1,34 @@
 const express = require("express");
-
 const router = express.Router();
 
 const busController = require("../controllers/busController");
-
-const authMiddleware = require("../middleware/authMiddleware");
+const auth = require("../middleware/authMiddleware");
 const adminMiddleware = require("../middleware/adminMiddleware");
+const staffMiddleware = require("../middleware/staffMiddleware");
 
-router.post(
-  "/",
-  authMiddleware,
-  adminMiddleware,
-  busController.createBus
-);
+// ── Public (customer-facing) ─────────────────────────────────────────────────
+// Note: seats for a trip are exposed via /api/trip-seats, not here.
 
-router.put(
-  "/:id",
-  authMiddleware,
-  adminMiddleware,
-  busController.updateBus
-);
+// ── Auth required (staff/admin management) ───────────────────────────────────
+// GET /api/buses        → company-scoped list (admin=all, staff=own company)
+router.get("/", auth, staffMiddleware, busController.getBuses);
 
-router.delete(
-  "/:id",
-  authMiddleware,
-  adminMiddleware,
-  busController.deleteBus
-);
+// GET /api/buses/:id    → company-scoped single bus
+router.get("/:id", auth, staffMiddleware, busController.getBusById);
 
-router.get("/", busController.getBuses);
+// POST /api/buses       → create; staff auto-gets their busCompany
+router.post("/", auth, staffMiddleware, busController.createBus);
 
-router.get("/:id", busController.getBusById);
+// PUT /api/buses/:id    → edit; staff RBAC checked in controller
+router.put("/:id", auth, staffMiddleware, busController.updateBus);
 
-router.post(
-  "/:busId/generate-seats",
-  authMiddleware,
-  adminMiddleware,
-  busController.generateSeats
-);
+// DELETE /api/buses/:id → admin only
+router.delete("/:id", auth, adminMiddleware, busController.deleteBus);
 
-router.get(
-  "/:busId/seats",
-  busController.getSeats
-);
+// POST /api/buses/:busId/generate-seats → staff/admin with RBAC in controller
+router.post("/:busId/generate-seats", auth, staffMiddleware, busController.generateSeats);
+
+// GET /api/buses/:busId/seats → auth required
+router.get("/:busId/seats", auth, staffMiddleware, busController.getSeats);
 
 module.exports = router;

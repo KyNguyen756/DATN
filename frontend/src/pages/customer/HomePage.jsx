@@ -60,10 +60,10 @@ export default function HomePage() {
       .catch(() => {}); // silently fail — users can still type
   }, []);
 
-  // Fetch popular trips (first page of all trips)
+  // Fetch popular trips - dùng endpoint public /trips/search (không cần login)
   useEffect(() => {
-    api.get('/trips', { params: { limit: 6 } })
-      .then(res => setPopularTrips(res.data?.trips || res.data || []))
+    api.get('/trips/search', { params: { limit: 6 } })
+      .then(res => setPopularTrips(Array.isArray(res.data) ? res.data.slice(0, 6) : (res.data?.trips || []).slice(0, 6)))
       .catch(() => {});
   }, []);
 

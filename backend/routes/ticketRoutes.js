@@ -1,19 +1,20 @@
 const express = require("express");
-const router = express.Router();
+const router  = express.Router();
 const ticketController = require("../controllers/ticketController");
-const authMiddleware = require("../middleware/authMiddleware");
-const adminMiddleware = require("../middleware/adminMiddleware");
+const authMiddleware   = require("../middleware/authMiddleware");
+const adminMiddleware  = require("../middleware/adminMiddleware");
+const staffMiddleware  = require("../middleware/staffMiddleware");
 
-// User: view own tickets
+// Authenticated user: view own tickets
 router.get("/my", authMiddleware, ticketController.getMyTickets);
 
-// User/Admin: verify a ticket (staff check-in)
-router.post("/verify", authMiddleware, ticketController.verifyTicket);
+// Staff/Admin: verify a ticket (check-in)
+router.post("/verify", authMiddleware, staffMiddleware, ticketController.verifyTicket);
 
-// Admin: all tickets
-router.get("/", authMiddleware, adminMiddleware, ticketController.getAllTickets);
+// Staff/Admin: all tickets (staff scoped to their company)
+router.get("/", authMiddleware, staffMiddleware, ticketController.getAllTickets);
 
-// Create tickets for a booking (owner or admin)
+// Owner / Staff / Admin: create tickets for a booking
 router.post("/:bookingId", authMiddleware, ticketController.createTickets);
 
 module.exports = router;

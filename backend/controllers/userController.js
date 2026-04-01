@@ -44,17 +44,27 @@ exports.uploadAvatar = asyncHandler(async (req, res) => {
 
 // GET /api/users  (admin)
 exports.getAllUsers = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 20, search } = req.query;
+  const { page = 1, limit = 20, search, role, busCompany } = req.query;
   const filter = {};
+
   if (search) {
     filter.$or = [
       { username: { $regex: search, $options: "i" } },
-      { email: { $regex: search, $options: "i" } }
+      { email:    { $regex: search, $options: "i" } }
     ];
+  }
+  if (role) filter.role = role;
+  // busCompany=none → users with no company assigned (for "assign new staff" picker)
+  if (busCompany === "none") {
+    filter.busCompany = { $in: [null, undefined] };
+  } else if (busCompany) {
+    filter.busCompany = busCompany;
   }
 
   const users = await User.find(filter)
     .select("-password")
+    .populate("busCompany", "name shortName code")
+    .populate("managedStations", "name city")
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(Number(limit));

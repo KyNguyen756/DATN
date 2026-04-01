@@ -28,34 +28,39 @@ exports.register = asyncHandler(async (req, res) => {
 exports.login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email })
+    .populate('busCompany', 'name shortName code logo status')
+    .populate('managedStations', 'name city');
+
   if (!user) {
-    return res.status(400).json({ message: "Email not found" });
+    return res.status(400).json({ message: 'Email not found' });
   }
 
-  if (user.status === "locked") {
-    return res.status(403).json({ message: "Account locked" });
+  if (user.status === 'locked') {
+    return res.status(403).json({ message: 'Account locked' });
   }
 
   const match = await bcrypt.compare(password, user.password);
   if (!match) {
-    return res.status(400).json({ message: "Wrong password" });
+    return res.status(400).json({ message: 'Wrong password' });
   }
 
   const token = jwt.sign(
     { id: user._id, role: user.role, username: user.username },
     process.env.JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: '7d' }
   );
 
   res.json({
-    message: "Login success",
+    message: 'Login success',
     token,
     user: {
       id: user._id,
       username: user.username,
       email: user.email,
-      role: user.role
+      role: user.role,
+      busCompany: user.busCompany || null,
+      managedStations: user.managedStations || [],
     }
   });
 });

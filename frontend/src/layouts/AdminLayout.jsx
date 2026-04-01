@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Route, Car, Ticket, Users,
   Tag, BarChart3, Settings, LogOut, Menu,
-  ChevronRight, Bell, Bus, MapPin,
+  ChevronRight, Bell, Bus, MapPin, Building2, CalendarClock,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -12,7 +12,9 @@ const navItems = [
   { to: '/admin/routes', label: 'Chuyến đi', icon: Route },
   { to: '/admin/vehicles', label: 'Xe & Phương tiện', icon: Car },
   { to: '/admin/stations', label: 'Bến xe', icon: MapPin },
-  { to: '/admin/tickets', label: 'Vé & Đặt chỗ', icon: Ticket },
+  { to: '/admin/bus-companies',    label: 'Nhà xe',           icon: Building2     },
+  { to: '/admin/trip-templates',   label: 'Lịch trình mẫu',  icon: CalendarClock },
+  { to: '/admin/tickets',          label: 'Vé & Đặt chỗ',    icon: Ticket        },
   { to: '/admin/customers', label: 'Khách hàng & NV', icon: Users },
   { to: '/admin/promotions', label: 'Khuyến mãi', icon: Tag },
   { to: '/admin/reports', label: 'Báo cáo', icon: BarChart3 },

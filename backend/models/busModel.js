@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 
 const busSchema = new mongoose.Schema({
 
+  busCompany: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "BusCompany",
+    default: null
+  },
+
   name: {
     type: String,
     required: true
