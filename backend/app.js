@@ -1,33 +1,46 @@
 const express = require("express");
 const cors = require("cors");
 
-const userRoutes = require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
+const stationRoutes = require("./routes/stationRoutes");
 const busRoutes = require("./routes/busRoutes");
-const seatRoutes = require("./routes/seatRoutes");
 const tripRoutes = require("./routes/tripRoutes");
-const tripseatRoutes = require("./routes/tripseatRoutes");
+const tripSeatRoutes = require("./routes/tripseatRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
-const dashboardRoutes = require("./routes/dashboardRoutes");
-const routeRoutes = require("./routes/routeRoutes");
-const employeeRoutes = require("./routes/employeeRoutes");
+const ticketRoutes = require("./routes/ticketRoutes");
+const statsRoutes = require("./routes/statsRoutes");
+const promotionRoutes = require("./routes/promotionRoutes");
+const busCompanyRoutes   = require("./routes/busCompanyRoutes");
+const tripTemplateRoutes = require("./routes/tripTemplateRoutes");
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: ["http://localhost:5173", "http://localhost:3000"],
+  credentials: true
+}));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
 
-app.use("/uploads", express.static("uploads"));
-
-app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/stations", stationRoutes);
 app.use("/api/buses", busRoutes);
-app.use("/api/seats", seatRoutes);
 app.use("/api/trips", tripRoutes);
-app.use("/api/tripseats", tripseatRoutes);
-app.use("/api/booking", bookingRoutes);
-app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/routes", routeRoutes);
-app.use("/api/employees", employeeRoutes);
+app.use("/api/trip-seats", tripSeatRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/tickets", ticketRoutes);
+app.use("/api/stats", statsRoutes);
+app.use("/api/promotions", promotionRoutes);
+app.use("/api/bus-companies",   busCompanyRoutes);
+app.use("/api/trip-templates",  tripTemplateRoutes);
+
+// Central error handler — catches errors thrown by asyncHandler
+app.use((err, req, res, next) => {
+  console.error(`[${new Date().toISOString()}] ${req.method} ${req.url} — ${err.message}`);
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({ error: err.message || "Internal server error" });
+});
 
 module.exports = app;

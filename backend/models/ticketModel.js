@@ -1,20 +1,42 @@
 const mongoose = require("mongoose");
 
-const TicketSchema = new mongoose.Schema({
-  user: {
+const ticketSchema = new mongoose.Schema({
+
+  booking: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
+    ref: "Booking",
+    required: true
   },
+
   trip: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Trip"
+    ref: "Trip",
+    required: true
   },
-  seatNumber: String,
-  qrCode: String,
+
+  seat: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "TripSeat",
+    required: true
+  },
+
+  qrCode: {
+    type: String
+  },
+
+  // Short human-readable code shown to user, e.g. VXB-A3F9K2
+  code: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+
   status: {
     type: String,
-    default: "active"
+    enum: ["valid", "used", "cancelled"],
+    default: "valid"
   }
-});
 
-module.exports = mongoose.model("Ticket", TicketSchema);
+}, { timestamps: true });
+
+module.exports = mongoose.model("Ticket", ticketSchema);

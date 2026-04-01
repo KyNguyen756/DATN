@@ -1,63 +1,54 @@
 const mongoose = require("mongoose");
 
-const UserSchema = new mongoose.Schema(
-  {
-    avatar: {
-      type: String,
-      default: ""
-    },
+const userSchema = new mongoose.Schema({
 
-    avatarPublicId: {
-      type: String
-    },
-
-    firstName: {
-      type: String,
-      required: true
-    },
-
-    lastName: {
-      type: String,
-      required: true
-    },
-
-    username: {
-      type: String,
-      unique: true,
-      required: true
-    },
-
-    email: {
-      type: String,
-      unique: true,
-      sparse: true
-    },
-
-    password: {
-      type: String,
-      required: true
-    },
-
-    birthDate: {
-      type: Date
-    },
-
-    cccd: {
-      type: String,
-      unique: true
-    },
-
-    phoneNumber: {
-      type: String
-    },
-
-    role: {
-      type: String,
-      enum: ["passenger", "admin"],
-      default: "passenger"
-    }
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true
   },
-  { timestamps: true }
-);
 
-module.exports = mongoose.model("User", UserSchema);
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true
+  },
+
+  password: {
+    type: String,
+    required: true
+  },
+
+  role: {
+    type: String,
+    enum: ["user", "staff", "admin"],
+    default: "user"
+  },
+
+  // RBAC: assigned bus company (for staff/admin)
+  busCompany: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "BusCompany",
+    default: null
+  },
+
+  // Stations this user manages (subset of busCompany.stations)
+  managedStations: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Station"
+    }
+  ],
+
+  status: {
+    type: String,
+    enum: ["active", "locked"],
+    default: "active"
+  }
+
+}, { timestamps: true });
+
+module.exports = mongoose.model("User", userSchema);

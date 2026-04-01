@@ -1,18 +1,46 @@
-const router = require("express").Router();
+const express = require("express");
+const router  = express.Router();
 
 const bookingController = require("../controllers/bookingController");
-const auth = require("../middleware/authMiddleware");
-const { requireAdmin } = require("../middleware/authMiddleware");
+const authMiddleware    = require("../middleware/authMiddleware");
+const adminMiddleware   = require("../middleware/adminMiddleware");
+const staffMiddleware   = require("../middleware/staffMiddleware");
 
-router.get("/", requireAdmin, bookingController.getAllBookings);
-router.post("/", auth, bookingController.createBooking);
+// Staff/Admin: Counter sale (walk-in booking — must come BEFORE the generic POST /)
+router.post(
+  "/counter",
+  authMiddleware,
+  staffMiddleware,
+  bookingController.createCounterBooking
+);
 
-router.get("/my", auth, bookingController.getMyBookings);
+// Authenticated user: online booking
+router.post(
+  "/",
+  authMiddleware,
+  bookingController.createBooking
+);
 
-router.get("/:id", auth, bookingController.getBookingById);
+// Authenticated user: view own bookings
+router.get(
+  "/my-bookings",
+  authMiddleware,
+  bookingController.getMyBookings
+);
 
-router.patch("/:id/cancel", auth, bookingController.cancelBooking);
+// Admin + Staff: view all bookings (staff see their company's trips only)
+router.get(
+  "/",
+  authMiddleware,
+  staffMiddleware,
+  bookingController.getBookings
+);
 
-router.post("/:id/confirm", requireAdmin, bookingController.confirmBooking);
+// Owner / Staff / Admin: cancel booking
+router.delete(
+  "/:id",
+  authMiddleware,
+  bookingController.cancelBooking
+);
 
 module.exports = router;

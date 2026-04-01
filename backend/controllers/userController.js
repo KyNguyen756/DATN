@@ -1,87 +1,111 @@
-const fs = require("fs");
-const path = require("path");
 const User = require("../models/userModel");
+const UserProfile = require("../models/userProfileModel");
+const asyncHandler = require("../utils/asyncHandler");
 
-// GET ALL USERS
-exports.getUsers = async (req, res) => {
+// GET /api/users/profile
+exports.getProfile = asyncHandler(async (req, res) => {
+  const profile = await UserProfile
+    .findOne({ user: req.user.id })
+    .populate("user", "-password");
 
-  const users = await User.find();
+  if (!profile) return res.status(404).json({ message: "Profile not found" });
+  res.json(profile);
+});
 
-  res.json(users);
-};
+// PUT /api/users/profile
+exports.updateProfile = asyncHandler(async (req, res) => {
+  const allowed = ["firstName", "lastName", "phone", "dateOfBirth", "address"];
+  const updates = {};
+  allowed.forEach(f => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
 
-//GET ME
-exports.getMe = async (req, res) => {
+  const profile = await UserProfile.findOneAndUpdate(
+    { user: req.user.id },
+    updates,
+    { new: true, runValidators: true }
+  ).populate("user", "-password");
 
-  const user = await User.findById(req.user.id)
-    .select("-password");
+  res.json(profile);
+});
 
-  res.json(user);
-};
+// POST /api/users/avatar
+exports.uploadAvatar = asyncHandler(async (req, res) => {
+  if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
-// GET USER BY ID
-exports.getUserById = async (req, res) => {
+  const avatarUrl = req.file.path; // Cloudinary URL via multer-storage-cloudinary
 
-  const user = await User.findById(req.params.id);
+  const profile = await UserProfile.findOneAndUpdate(
+    { user: req.user.id },
+    { avatar: avatarUrl },
+    { new: true }
+  );
 
-  res.json(user);
-};
+  res.json({ avatar: avatarUrl, profile });
+});
 
-// UPDATE USER
-exports.updateProfile = async (req, res) => {
+// GET /api/users  (admin)
+exports.getAllUsers = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 20, search, role, busCompany } = req.query;
+  const filter = {};
 
-  const {
-    firstName,
-    lastName,
-    birthDate,
-    phoneNumber
-  } = req.body;
+  if (search) {
+    filter.$or = [
+      { username: { $regex: search, $options: "i" } },
+      { email:    { $regex: search, $options: "i" } }
+    ];
+  }
+  if (role) filter.role = role;
+  // busCompany=none → users with no company assigned (for "assign new staff" picker)
+  if (busCompany === "none") {
+    filter.busCompany = { $in: [null, undefined] };
+  } else if (busCompany) {
+    filter.busCompany = busCompany;
+  }
+
+  const users = await User.find(filter)
+    .select("-password")
+    .populate("busCompany", "name shortName code")
+    .populate("managedStations", "name city")
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(Number(limit));
+
+  const total = await User.countDocuments(filter);
+  res.json({ users, total, page: Number(page), limit: Number(limit) });
+});
+
+// PUT /api/users/:id/status  (admin — lock/unlock)
+exports.updateUserStatus = asyncHandler(async (req, res) => {
+  const { status } = req.body;
+  if (!["active", "locked"].includes(status)) {
+    return res.status(400).json({ message: "status must be 'active' or 'locked'" });
+  }
+
+  // Prevent admin from locking themselves
+  if (req.params.id === req.user.id) {
+    return res.status(400).json({ message: "Cannot change your own status" });
+  }
 
   const user = await User.findByIdAndUpdate(
-    req.user.id,
-    {
-      firstName,
-      lastName,
-      birthDate,
-      phoneNumber
-    },
+    req.params.id,
+    { status },
     { new: true }
   ).select("-password");
 
+  if (!user) return res.status(404).json({ message: "User not found" });
   res.json(user);
-};
+});
 
-//AVATAR CHANGE
-exports.updateAvatar = async (req, res) => {
-
-  try {
-
-    const user = await User.findById(req.user.id);
-
-    // xóa avatar cũ trên cloudinary
-    if (user.avatarPublicId) {
-      await cloudinary.uploader.destroy(user.avatarPublicId);
-    }
-
-    // avatar mới
-    user.avatar = req.file.path;
-    user.avatarPublicId = req.file.filename;
-
-    await user.save();
-
-    res.json(user);
-
-  } catch (error) {
-    res.status(500).json(error);
+// DELETE /api/users/:id  (admin)
+exports.deleteUser = asyncHandler(async (req, res) => {
+  if (req.params.id === req.user.id) {
+    return res.status(400).json({ message: "Cannot delete your own account" });
   }
 
-};
+  const user = await User.findByIdAndDelete(req.params.id);
+  if (!user) return res.status(404).json({ message: "User not found" });
 
+  // Clean up profile too
+  await UserProfile.findOneAndDelete({ user: req.params.id });
 
-// DELETE USER
-exports.deleteUser = async (req, res) => {
-
-  await User.findByIdAndDelete(req.params.id);
-
-  res.json("User deleted");
-};
+  res.json({ message: "User deleted" });
+});
