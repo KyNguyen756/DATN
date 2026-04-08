@@ -55,7 +55,7 @@ export default function AdminLayout() {
           </div>
           {!collapsed && (
             <div>
-              <div style={{ color: 'white', fontWeight: '800', fontSize: '16px', lineHeight: 1 }}>VéXeBus</div>
+              <div style={{ color: 'white', fontWeight: '800', fontSize: '16px', lineHeight: 1 }}>SlimBus</div>
               <div style={{ color: '#64748B', fontSize: '11px', marginTop: '2px' }}>Admin Dashboard</div>
             </div>
           )}

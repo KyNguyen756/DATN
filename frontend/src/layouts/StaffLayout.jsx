@@ -7,7 +7,7 @@ import {
 
 const navItems = [
   { to: '/staff', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/staff/quick-sale', label: 'Bán vé nhanh', icon: Ticket },
+  { to: '/staff/quick-sale', label: 'Bán vé', icon: Ticket },
   { to: '/staff/check-in', label: 'Check-in hành khách', icon: QrCode },
   { to: '/staff/hold-seats', label: 'Quản lý giữ ghế', icon: Clock },
 ];

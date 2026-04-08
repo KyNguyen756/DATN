@@ -7,10 +7,11 @@ const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('vi-VN') : '';
 const toDatetimeLocal = (iso) => iso ? new Date(iso).toISOString().slice(0, 16) : '';
 
 const statusCfg = {
-  scheduled: { label: 'Lên lịch', cls: 'badge-info' },
-  ongoing: { label: 'Đang chạy', cls: 'badge-success' },
-  completed: { label: 'Hoàn thành', cls: 'badge-gray' },
-  cancelled: { label: 'Đã hủy', cls: 'badge-danger' },
+  scheduled:  { label: 'Lên lịch',   cls: 'badge-info' },
+  active:     { label: 'Đang hoạt động', cls: 'badge-success' },
+  ongoing:    { label: 'Đang chạy',  cls: 'badge-success' },
+  completed:  { label: 'Hoàn thành', cls: 'badge-gray' },
+  cancelled:  { label: 'Đã hủy',    cls: 'badge-danger' },
 };
 
 const emptyForm = {
@@ -153,7 +154,7 @@ export default function RoutesPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
         {[
           { label: 'Tổng chuyến', value: trips.length, color: 'var(--primary)' },
-          { label: 'Đang chạy', value: trips.filter(t => t.status === 'ongoing').length, color: 'var(--success)' },
+          { label: 'Đang chạy', value: trips.filter(t => ['ongoing','active'].includes(t.status)).length, color: 'var(--success)' },
           { label: 'Lên lịch', value: trips.filter(t => t.status === 'scheduled').length, color: 'var(--info)' },
           { label: 'Đã hủy', value: trips.filter(t => t.status === 'cancelled').length, color: 'var(--danger)' },
         ].map((s, i) => (

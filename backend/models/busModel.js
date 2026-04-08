@@ -13,6 +13,13 @@ const busSchema = new mongoose.Schema({
     unique: true
   },
 
+  // The station this bus belongs to / is managed by
+  station: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Station",
+    default: null
+  },
+
   totalSeats: {
     type: Number,
     required: true
@@ -46,10 +53,11 @@ const busSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ["active", "inactive"],
+    enum: ["active", "maintenance", "inactive"],
     default: "active"
   }
 
 }, { timestamps: true });
 
 module.exports = mongoose.model("Bus", busSchema);
+

@@ -1,14 +1,7 @@
 import { useState } from 'react';
-import { QrCode, CheckCircle, X, Search, Bus, Clock, Loader } from 'lucide-react';
+import { QrCode, CheckCircle, X, Search, Loader } from 'lucide-react';
 import api from '../../api/axios';
 
-const passengers = [
-  { id: 'VXB-123456', name: 'Nguyễn Văn A', phone: '0901234567', seat: 'A1', status: 'pending', type: 'Limousine' },
-  { id: 'VXB-234567', name: 'Trần Thị B', phone: '0912345678', seat: 'B3', status: 'checked', type: 'Limousine' },
-  { id: 'VXB-345678', name: 'Lê Văn C', phone: '0923456789', seat: 'C2', status: 'pending', type: 'Limousine' },
-  { id: 'VXB-456789', name: 'Phạm Thị D', phone: '0934567890', seat: 'D4', status: 'checked', type: 'Limousine' },
-  { id: 'VXB-567890', name: 'Hoàng Văn E', phone: '0945678901', seat: 'E1', status: 'pending', type: 'Limousine' },
-];
 
 export default function CheckInPage() {
   const [qrInput, setQrInput] = useState('');
@@ -46,12 +39,15 @@ export default function CheckInPage() {
       <div className="page-header">
         <div>
           <h1 className="section-title">Check-in hành khách</h1>
-          <p className="section-subtitle">Scan QR vé hoặc tìm kiếm để xác nhận lên xe</p>
+          <p className="section-subtitle">Scan QR vé hoặc nhập mã để xác nhận lên xe</p>
         </div>
-        <span className="badge badge-info" style={{ fontSize: '13px', padding: '6px 14px' }}>
-          <Bus size={13} /> Phương Trang - 07:00 - TP.HCM → Đà Lạt
-        </span>
+        {checkedCount > 0 && (
+          <span className="badge badge-success" style={{ fontSize: '13px', padding: '6px 14px' }}>
+            ✓ Đã check-in {checkedCount} vé hôm nay
+          </span>
+        )}
       </div>
+
 
       <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '20px' }}>
         {/* Scanner */}

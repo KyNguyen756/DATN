@@ -10,13 +10,25 @@ exports.generateTripSeats = asyncHandler(async (req, res) => {
   const trip = await Trip.findById(tripId).populate("bus");
   if (!trip) return res.status(404).json({ message: "Trip not found" });
 
+  // Safety check: refuse if the trip has active bookings
+  const Booking = require("../models/bookingModel");
+  const activeBookings = await Booking.countDocuments({
+    trip: tripId,
+    bookingStatus: "active"
+  });
+  if (activeBookings > 0) {
+    return res.status(400).json({
+      message: `Cannot regenerate seats — trip has ${activeBookings} active booking(s). Cancel them first.`
+    });
+  }
+
   const seats = await Seat.find({ bus: trip.bus._id });
 
   if (seats.length === 0) {
     return res.status(400).json({ message: "No seats found for this bus. Generate bus seats first." });
   }
 
-  // Remove any previously generated trip seats to avoid duplicates
+  // Remove any previously generated trip seats
   await TripSeat.deleteMany({ trip: tripId });
 
   const tripSeats = seats.map(seat => ({
@@ -77,31 +89,43 @@ exports.getSeatCount = asyncHandler(async (req, res) => {
 });
 
 // POST /api/trip-seats/lock/:tripSeatId
+// FIXED: Uses atomic findOneAndUpdate to prevent race conditions / double-booking.
 exports.lockSeat = asyncHandler(async (req, res) => {
   const { tripSeatId } = req.params;
+  const now = new Date();
+  const lockExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-  const seat = await TripSeat.findById(tripSeatId);
-  if (!seat) return res.status(404).json({ message: "Seat not found" });
+  // Atomically lock the seat only if:
+  //   (a) it is currently "available", OR
+  //   (b) it is "locked" but the lock has expired, OR
+  //   (c) it is "locked" by THIS user (re-lock resets the timer)
+  // This single operation prevents two concurrent requests from both succeeding.
+  const updated = await TripSeat.findOneAndUpdate(
+    {
+      _id: tripSeatId,
+      $or: [
+        { status: "available" },
+        { status: "locked", lockedUntil: { $lt: now } },
+        { status: "locked", lockedBy: req.user.id }
+      ]
+    },
+    {
+      status: "locked",
+      lockedBy: req.user.id,
+      lockedUntil: lockExpiry
+    },
+    { new: true }
+  ).populate("seat");
 
-  // Release if previously locked by THIS user (re-lock resets timer)
-  const expiredByUser = seat.status === "locked" && seat.lockedBy?.toString() === req.user.id;
-  if (seat.status === "locked" && !expiredByUser) {
-    // Check if lock has expired
-    if (seat.lockedUntil > new Date()) {
-      return res.status(400).json({ message: "Seat is already locked by another user" });
-    }
+  if (!updated) {
+    // The seat exists but didn't match the condition — either booked or locked by someone else
+    const seat = await TripSeat.findById(tripSeatId);
+    if (!seat) return res.status(404).json({ message: "Seat not found" });
+    if (seat.status === "booked") return res.status(400).json({ message: "Seat is already booked" });
+    return res.status(400).json({ message: "Seat is currently held by another user. Please choose a different seat." });
   }
 
-  if (seat.status === "booked") {
-    return res.status(400).json({ message: "Seat is already booked" });
-  }
-
-  seat.status = "locked";
-  seat.lockedBy = req.user.id;
-  seat.lockedUntil = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-  await seat.save();
-  res.json(seat);
+  res.json(updated);
 });
 
 // DELETE /api/trip-seats/unlock/:tripSeatId

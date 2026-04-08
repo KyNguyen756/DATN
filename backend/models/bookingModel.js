@@ -2,10 +2,20 @@ const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema({
 
+  // null for guest/counter bookings
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true
+    default: null
+  },
+
+  isGuestBooking: { type: Boolean, default: false },
+
+  // 'online' = customer self-service, 'counter' = staff sold at window
+  bookingSource: {
+    type: String,
+    enum: ["online", "counter"],
+    default: "online"
   },
 
   trip: {
@@ -21,9 +31,29 @@ const bookingSchema = new mongoose.Schema({
     }
   ],
 
+  // Raw price before discount (sum of all seats' individual prices)
   totalPrice: {
     type: Number,
     required: true
+  },
+
+  // Discount amount applied (0 if no promo)
+  discountAmount: {
+    type: Number,
+    default: 0
+  },
+
+  // Final price after discount = totalPrice - discountAmount
+  finalPrice: {
+    type: Number,
+    required: true
+  },
+
+  // Promotion code used (if any)
+  promotionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Promotion",
+    default: null
   },
 
   paymentStatus: {
@@ -43,7 +73,10 @@ const bookingSchema = new mongoose.Schema({
   passengerPhone: { type: String, default: "" },
   passengerEmail: { type: String, default: "" },
   paymentMethod: { type: String, default: "cod" },
-  note: { type: String, default: "" }
+  note: { type: String, default: "" },
+
+  // Printed receipt number for counter sales
+  receiptNumber: { type: String, default: null }
 
 }, { timestamps: true });
 

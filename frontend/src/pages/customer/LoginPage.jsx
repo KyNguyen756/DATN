@@ -162,7 +162,7 @@ export default function LoginPage() {
                 value={form.password}
                 onChange={handleChange}
                 required
-                minLength={6}
+                minLength={5}
                 style={{ paddingRight: '44px' }}
               />
               <button

@@ -55,7 +55,7 @@ export default function CustomerLayout() {
               <Bus size={22} color="white" />
             </div>
             <div>
-              <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--gray-900)', lineHeight: 1 }}>VéXe<span style={{ color: 'var(--primary)' }}>Bus</span></div>
+              <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--gray-900)', lineHeight: 1 }}>Slim<span style={{ color: 'var(--primary)' }}>Bus</span></div>
               <div style={{ fontSize: '10px', color: 'var(--gray-400)', fontWeight: 500 }}>Đặt vé trực tuyến</div>
             </div>
           </Link>

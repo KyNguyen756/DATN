@@ -8,6 +8,7 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 // Auth-required: own profile
 router.get("/profile", authMiddleware, userController.getProfile);
 router.put("/profile", authMiddleware, userController.updateProfile);
+router.put("/change-password", authMiddleware, userController.changePassword);
 router.post("/avatar", authMiddleware, upload.single("avatar"), userController.uploadAvatar);
 
 // Admin: user management

@@ -39,6 +39,14 @@ router.post(
   busController.generateSeats
 );
 
+// Alias: /api/buses/:busId/seats/generate
+router.post(
+  "/:busId/seats/generate",
+  authMiddleware,
+  adminMiddleware,
+  busController.generateSeats
+);
+
 router.get(
   "/:busId/seats",
   busController.getSeats

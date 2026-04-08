@@ -396,10 +396,11 @@ export default function TripDetailPage() {
                   state: {
                     tripId: trip._id,
                     seatIds: selectedSeats.map(s => s._id),
-                    selectedSeats,
+                    seatObjs: selectedSeats,   // full TripSeat objects (with seat.type for VIP pricing)
                     trip
                   }
                 })}
+
               >
                 Đặt vé ngay ({selectedSeats.length} ghế)
               </button>

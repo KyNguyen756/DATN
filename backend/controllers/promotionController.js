@@ -41,42 +41,44 @@ exports.deletePromotion = asyncHandler(async (req, res) => {
   res.json({ message: "Promotion deleted" });
 });
 
-// POST /api/promotions/apply  — validate a code and return discount
+// POST /api/promotions/apply  — DRY-RUN: validate a code and return discount preview.
+// NOTE: This does NOT increment usedCount. The actual increment happens in POST /api/bookings/checkout.
 exports.applyPromotion = asyncHandler(async (req, res) => {
   const { code, orderTotal } = req.body;
 
   if (!code) return res.status(400).json({ message: "Promotion code is required" });
+  if (!orderTotal || orderTotal <= 0) return res.status(400).json({ message: "orderTotal is required" });
 
   const promo = await Promotion.findOne({ code: code.toUpperCase(), status: "active" });
 
   if (!promo) {
-    return res.status(404).json({ message: "Invalid or expired promotion code" });
+    return res.status(404).json({ message: "Mã khuyến mãi không hợp lệ hoặc đã hết hiệu lực" });
   }
 
   // Check expiry
   if (promo.expiresAt && promo.expiresAt < new Date()) {
-    return res.status(400).json({ message: "Promotion code has expired" });
+    return res.status(400).json({ message: "Mã khuyến mãi đã hết hạn" });
   }
 
   // Check usage limit
   if (promo.maxUses !== null && promo.usedCount >= promo.maxUses) {
-    return res.status(400).json({ message: "Promotion code usage limit reached" });
+    return res.status(400).json({ message: "Mã khuyến mãi đã hết lượt sử dụng" });
   }
 
   // Check minimum order
   if (orderTotal < promo.minOrderValue) {
     return res.status(400).json({
-      message: `Minimum order value is ${promo.minOrderValue.toLocaleString()}đ`
+      message: `Đơn hàng tối thiểu ${promo.minOrderValue.toLocaleString()}đ để dùng mã này`
     });
   }
 
-  // Calculate discount
+  // Calculate discount (preview only — does NOT save)
   let discountAmount;
   if (promo.discountType === "percent") {
     discountAmount = Math.round((orderTotal * promo.discountValue) / 100);
     if (promo.maxDiscount) discountAmount = Math.min(discountAmount, promo.maxDiscount);
   } else {
-    discountAmount = promo.discountValue;
+    discountAmount = Math.min(promo.discountValue, orderTotal);
   }
 
   const finalTotal = Math.max(0, orderTotal - discountAmount);
@@ -85,6 +87,7 @@ exports.applyPromotion = asyncHandler(async (req, res) => {
     valid: true,
     code: promo.code,
     description: promo.description,
+    label: promo.label,
     discountAmount,
     finalTotal,
     promotionId: promo._id

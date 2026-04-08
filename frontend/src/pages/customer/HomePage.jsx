@@ -2,32 +2,17 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search, MapPin, Calendar, Users, ChevronRight,
-  Star, Clock, Zap, Shield, Headphones, ArrowRight,
-  TrendingUp, Bus, Tag
+  Clock, Zap, Shield, Headphones, ArrowRight,
+  Bus, Tag, TrendingUp
 } from 'lucide-react';
 import api from '../../api/axios';
 
-const popularRoutes = [
-  { from: 'Hà Nội', to: 'TP.HCM', price: '350.000', time: '36h', trips: 24 },
-  { from: 'TP.HCM', to: 'Đà Lạt', price: '120.000', time: '7h', trips: 18 },
-  { from: 'Hà Nội', to: 'Đà Nẵng', price: '200.000', time: '13h', trips: 15 },
-  { from: 'TP.HCM', to: 'Nha Trang', price: '150.000', time: '9h', trips: 20 },
-  { from: 'TP.HCM', to: 'Vũng Tàu', price: '80.000', time: '2h', trips: 30 },
-  { from: 'Hà Nội', to: 'Hải Phòng', price: '70.000', time: '2h', trips: 40 },
-];
-
+// Static feature cards — these are genuine product features, not fake metrics
 const features = [
-  { icon: Zap, title: 'Đặt vé siêu nhanh', desc: 'Chỉ 3 bước để có vé xe trong tay', color: '#FF6B35' },
-  { icon: Shield, title: 'Thanh toán bảo mật', desc: 'Mã hóa SSL 256-bit, an toàn tuyệt đối', color: '#22C55E' },
-  { icon: Star, title: 'Hơn 500+ tuyến xe', desc: 'Mạng lưới rộng khắp toàn quốc', color: '#F59E0B' },
-  { icon: Headphones, title: 'Hỗ trợ 24/7', desc: 'Tổng đài miễn phí 1900 1234', color: '#3B82F6' },
-];
-
-const hotBuses = [
-  { name: 'Phương Trang', routes: 'TP.HCM ↔ Tây Nguyên', rating: 4.8, reviews: 2340, type: 'Limousine' },
-  { name: 'Thành Bưởi', routes: 'TP.HCM ↔ Đà Lạt', rating: 4.7, reviews: 1890, type: 'Giường nằm' },
-  { name: 'Hoàng Long', routes: 'Hà Nội ↔ Thanh Hóa', rating: 4.6, reviews: 1560, type: 'Ghế ngồi' },
-  { name: 'Kumho Samco', routes: 'TP.HCM ↔ Nha Trang', rating: 4.9, reviews: 3210, type: 'VIP' },
+  { icon: Zap,         title: 'Đặt vé siêu nhanh',   desc: 'Chỉ 3 bước để có vé xe trong tay',          color: '#FF6B35' },
+  { icon: Shield,      title: 'Thanh toán bảo mật',   desc: 'Mã hóa SSL 256-bit, an toàn tuyệt đối',     color: '#22C55E' },
+  { icon: Bus,         title: 'Nhiều tuyến xe',        desc: 'Mạng lưới chuyến xe phủ rộng toàn quốc',    color: '#F59E0B' },
+  { icon: Headphones,  title: 'Hỗ trợ tận tình',      desc: 'Đội ngũ CSKH luôn sẵn sàng hỗ trợ bạn',    color: '#3B82F6' },
 ];
 
 export default function HomePage() {
@@ -37,17 +22,20 @@ export default function HomePage() {
   const [date, setDate] = useState('');
   const [seats, setSeats] = useState(1);
   const [bannerIdx, setBannerIdx] = useState(0);
+
   // Real data from API
   const [cities, setCities] = useState([]);
   const [popularTrips, setPopularTrips] = useState([]);
   const [activePromos, setActivePromos] = useState([]);
+  const [publicStats, setPublicStats] = useState(null);
 
   const banners = [
-    { bg: 'linear-gradient(135deg, #FF6B35 0%, #E55A26 50%, #C44A18 100%)', title: 'Mùa xuân về − Đặt vé ngay!', sub: 'Giảm đến 30% tất cả tuyến dịp Tết' },
-    { bg: 'linear-gradient(135deg, #1A1A2E 0%, #0F3460 100%)', title: 'Limousine hạng sang', sub: 'Trải nghiệm đẳng cấp − Giá ưu đãi' },
-    { bg: 'linear-gradient(135deg, #14B8A6 0%, #0891B2 100%)', title: 'Đặt vé sớm − Giá rẻ!', sub: 'Đặt trước 7 ngày giảm thêm 15%' },
+    { bg: 'linear-gradient(135deg, #FF6B35 0%, #E55A26 50%, #C44A18 100%)', title: 'Mùa hè về − Đặt vé ngay!', sub: 'Tìm chuyến xe tốt nhất cho chuyến đi của bạn' },
+    { bg: 'linear-gradient(135deg, #1A1A2E 0%, #0F3460 100%)', title: 'Xe Limousine hạng sang', sub: 'Trải nghiệm đẳng cấp − Giá ưu đãi hàng ngày' },
+    { bg: 'linear-gradient(135deg, #14B8A6 0%, #0891B2 100%)', title: 'Đặt sớm − Giá tốt hơn!', sub: 'Lên kế hoạch sớm để có chỗ ngồi ưng ý' },
   ];
 
+  // Auto-rotate banners
   useEffect(() => {
     const t = setInterval(() => setBannerIdx(p => (p + 1) % banners.length), 4000);
     return () => clearInterval(t);
@@ -57,10 +45,10 @@ export default function HomePage() {
   useEffect(() => {
     api.get('/stations/cities')
       .then(res => setCities(res.data?.cities || res.data || []))
-      .catch(() => {}); // silently fail — users can still type
+      .catch(() => {});
   }, []);
 
-  // Fetch popular trips (first page of all trips)
+  // Fetch recent / popular trips (first page)
   useEffect(() => {
     api.get('/trips', { params: { limit: 6 } })
       .then(res => setPopularTrips(res.data?.trips || res.data || []))
@@ -72,9 +60,16 @@ export default function HomePage() {
     api.get('/promotions')
       .then(res => setActivePromos((res.data || []).filter(p => {
         const notExpired = !p.expiresAt || new Date(p.expiresAt) > new Date();
-        const notMaxed = !p.maxUses || (p.usedCount || 0) < p.maxUses;
+        const notMaxed = p.maxUses === null || (p.usedCount || 0) < (p.maxUses || Infinity);
         return notExpired && notMaxed;
       }).slice(0, 3)))
+      .catch(() => {});
+  }, []);
+
+  // Fetch real public stats (totalTickets, totalTrips, totalUsers)
+  useEffect(() => {
+    api.get('/stats/summary')
+      .then(res => setPublicStats(res.data))
       .catch(() => {});
   }, []);
 
@@ -84,7 +79,7 @@ export default function HomePage() {
 
   return (
     <div>
-      {/* Hero Banner */}
+      {/* ── Hero Banner ── */}
       <section style={{
         background: banners[bannerIdx].bg,
         minHeight: '520px',
@@ -97,21 +92,25 @@ export default function HomePage() {
         overflow: 'hidden',
         padding: '60px 24px',
       }}>
-        {/* Background pattern */}
         <div style={{
           position: 'absolute', inset: 0,
           backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.05) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(255,255,255,0.05) 0%, transparent 50%)',
         }} />
 
         <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: '700px', margin: '0 auto' }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
-            padding: '6px 16px', borderRadius: '20px', marginBottom: '20px',
-            color: 'white', fontSize: '13px', fontWeight: '600',
-          }}>
-            <TrendingUp size={14} /> Hơn 1 triệu vé đã bán
-          </div>
+          {/* Real stat badge */}
+          {publicStats && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
+              padding: '6px 16px', borderRadius: '20px', marginBottom: '20px',
+              color: 'white', fontSize: '13px', fontWeight: '600',
+            }}>
+              <TrendingUp size={14} />
+              {publicStats.totalTickets?.toLocaleString()} vé đã bán •{' '}
+              {publicStats.totalTrips?.toLocaleString()} chuyến xe
+            </div>
+          )}
 
           <h1 style={{
             color: 'white', fontSize: 'clamp(28px, 5vw, 52px)', fontWeight: '900',
@@ -200,7 +199,7 @@ export default function HomePage() {
               <span className="flex items-center gap-1" style={{ color: 'var(--primary)' }}><Users size={13} /> Số ghế</span>
             </label>
             <select className="form-select" value={seats} onChange={e => setSeats(e.target.value)}>
-              {[1,2,3,4,5,6].map(n => <option key={n} value={n}>{n} ghế</option>)}
+              {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} ghế</option>)}
             </select>
           </div>
           <button
@@ -214,7 +213,27 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* ── Real Stats Bar ── */}
+      {publicStats && (
+        <section style={{ background: 'var(--secondary)', padding: '20px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="container">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', textAlign: 'center' }}>
+              {[
+                { label: 'Vé đã bán', value: publicStats.totalTickets?.toLocaleString() || '—', color: 'var(--primary)' },
+                { label: 'Chuyến xe hiện tại', value: publicStats.totalTrips?.toLocaleString() || '—', color: '#22C55E' },
+                { label: 'Khách hàng', value: publicStats.totalUsers?.toLocaleString() || '—', color: '#3B82F6' },
+              ].map(s => (
+                <div key={s.label}>
+                  <div style={{ fontSize: '28px', fontWeight: '900', color: s.color }}>{s.value}</div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Features ── */}
       <section style={{ padding: '60px 0', background: 'white' }}>
         <div className="container">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
@@ -244,13 +263,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Popular Routes */}
+      {/* ── Popular Routes (real data) ── */}
       <section style={{ padding: '60px 0', background: 'var(--gray-50)' }}>
         <div className="container">
           <div className="flex items-center justify-between" style={{ marginBottom: '32px' }}>
             <div>
-              <h2 className="section-title">Tuyến phổ biến</h2>
-              <p className="section-subtitle">Các tuyến được đặt nhiều nhất</p>
+              <h2 className="section-title">Chuyến xe mới nhất</h2>
+              <p className="section-subtitle">Các chuyến xe đang được lên lịch</p>
             </div>
             <button className="btn btn-ghost" onClick={() => navigate('/search')}>
               Xem tất cả <ChevronRight size={16} />
@@ -259,8 +278,7 @@ export default function HomePage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
             {popularTrips.length > 0 ? popularTrips.map((t, i) => (
               <div key={t._id || i} className="card card-hover" style={{ padding: '20px', cursor: 'pointer' }}
-                onClick={() => navigate(`/search?from=${t.fromStation?.city}&to=${t.toStation?.city}`)}
-              >
+                onClick={() => navigate(`/trip/${t._id}`)}>
                 <div className="flex items-center justify-between" style={{ marginBottom: '14px' }}>
                   <div className="flex items-center gap-2">
                     <span style={{ fontWeight: '700', fontSize: '15px', color: 'var(--gray-900)' }}>{t.fromStation?.city}</span>
@@ -276,18 +294,23 @@ export default function HomePage() {
                   </div>
                   <div className="flex items-center gap-1" style={{ color: 'var(--gray-500)', fontSize: '13px' }}>
                     <Clock size={13} />
-                    {t.estimatedDuration ? `~${Math.floor(t.estimatedDuration / 60)}h` : `${new Date(t.departureTime).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})}`}
+                    {new Date(t.departureTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
+                {t.availableSeats !== undefined && (
+                  <div style={{ marginTop: '10px', fontSize: '11px', fontWeight: '700', color: t.availableSeats <= 0 ? 'var(--danger)' : t.availableSeats <= 5 ? 'var(--warning)' : 'var(--success)' }}>
+                    {t.availableSeats <= 0 ? 'Hết chỗ' : t.availableSeats <= 5 ? `${t.availableSeats} chỗ cuối!` : `${t.availableSeats} chỗ trống`}
+                  </div>
+                )}
               </div>
-            )) : [1,2,3,4,5,6].map(i => (
+            )) : [1, 2, 3, 4, 5, 6].map(i => (
               <div key={i} className="card" style={{ padding: '20px', opacity: 0.5, height: '100px', background: 'var(--gray-100)', borderRadius: '14px' }} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* Promotions */}
+      {/* ── Promotions (real data) ── */}
       <section style={{ padding: '60px 0', background: 'white' }}>
         <div className="container">
           <div style={{ marginBottom: '32px' }}>
@@ -298,7 +321,10 @@ export default function HomePage() {
             {activePromos.length > 0 ? activePromos.map((p, i) => {
               const colors = ['#FF6B35', '#8B5CF6', '#14B8A6'];
               const c = colors[i % colors.length];
-              const discountLabel = p.discountType === 'percent' ? `Giảm ${p.discountValue}%` : `Giảm ${(p.discountValue/1000).toFixed(0)}k`;
+              const discountLabel = p.discountType === 'percent'
+                ? `Giảm ${p.discountValue}%`
+                : `Giảm ${(p.discountValue / 1000).toFixed(0)}k`;
+              const remaining = p.maxUses ? p.maxUses - (p.usedCount || 0) : null;
               return (
                 <div key={p._id} style={{
                   borderRadius: '16px', overflow: 'hidden', cursor: 'pointer',
@@ -310,75 +336,43 @@ export default function HomePage() {
                       borderRadius: '20px', fontSize: '12px', fontWeight: '700',
                       display: 'inline-block', marginBottom: '12px',
                     }}>{discountLabel}</span>
-                    <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '6px' }}>
-                      {p.code}
-                    </h3>
+                    <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '6px' }}>{p.code}</h3>
                     <p style={{ opacity: 0.85, fontSize: '13px' }}>
-                      {p.expiresAt ? `Hết hạn: ${new Date(p.expiresAt).toLocaleDateString('vi-VN')}` : 'Không giới hạn thời gian'}
+                      {p.description || (p.expiresAt ? `Hết hạn: ${new Date(p.expiresAt).toLocaleDateString('vi-VN')}` : 'Không giới hạn thời gian')}
                     </p>
+                    {remaining !== null && (
+                      <p style={{ opacity: 0.8, fontSize: '12px', marginTop: '4px' }}>
+                        Còn {remaining} lượt
+                      </p>
+                    )}
                   </div>
                   <div style={{ background: 'white', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ fontSize: '11px', color: 'var(--gray-400)', marginBottom: '2px' }}>Mã giảm giá</div>
-                      <div style={{
-                        fontFamily: 'monospace', fontWeight: '800', fontSize: '16px',
-                        letterSpacing: '2px', color: c,
-                      }}>{p.code}</div>
+                      <div style={{ fontFamily: 'monospace', fontWeight: '800', fontSize: '16px', letterSpacing: '2px', color: c }}>{p.code}</div>
                     </div>
-                    <button className="btn btn-primary btn-sm" onClick={() => navigate('/search')}>Dùng ngay</button>
+                    <button className="btn btn-primary btn-sm" onClick={() => navigate('/search')}>
+                      <Tag size={13} /> Dùng ngay
+                    </button>
                   </div>
                 </div>
               );
             }) : (
-              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '32px', color: 'var(--gray-400)', fontSize: '13px' }}>Hiện chưa có ưu đãi nào đang hoạt động</div>
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '32px', color: 'var(--gray-400)', fontSize: '13px' }}>
+                Hiện chưa có ưu đãi nào đang hoạt động
+              </div>
             )}
           </div>
         </div>
       </section>
 
-      {/* Hot Buses */}
-      <section style={{ padding: '60px 0', background: 'var(--gray-50)' }}>
-        <div className="container">
-          <div style={{ marginBottom: '32px' }}>
-            <h2 className="section-title">Nhà xe nổi bật</h2>
-            <p className="section-subtitle">Được đánh giá cao bởi hành khách</p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
-            {hotBuses.map((b, i) => (
-              <div key={i} className="card card-hover" style={{ padding: '20px', cursor: 'pointer' }}>
-                <div className="flex items-center gap-3" style={{ marginBottom: '12px' }}>
-                  <div style={{
-                    width: '48px', height: '48px', borderRadius: '12px',
-                    background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: '800', fontSize: '18px', color: 'var(--primary)',
-                  }}>{b.name[0]}</div>
-                  <div>
-                    <div style={{ fontWeight: '700', color: 'var(--gray-900)' }}>{b.name}</div>
-                    <span className="badge badge-gray" style={{ marginTop: '2px' }}>{b.type}</span>
-                  </div>
-                </div>
-                <div style={{ fontSize: '13px', color: 'var(--gray-500)', marginBottom: '12px' }}>{b.routes}</div>
-                <div className="flex items-center gap-2">
-                  <Star size={14} fill="#F59E0B" color="#F59E0B" />
-                  <span style={{ fontWeight: '700', color: 'var(--gray-900)' }}>{b.rating}</span>
-                  <span style={{ color: 'var(--gray-400)', fontSize: '12px' }}>({b.reviews.toLocaleString()} đánh giá)</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
+      {/* ── CTA ── */}
       <section style={{
         padding: '80px 0',
         background: 'linear-gradient(135deg, var(--secondary) 0%, var(--accent) 100%)',
         position: 'relative', overflow: 'hidden',
       }}>
-        <div style={{
-          position: 'absolute', inset: 0,
-          backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(255,107,53,0.15) 0%, transparent 60%)',
-        }} />
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(255,107,53,0.15) 0%, transparent 60%)' }} />
         <div className="container" style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <Bus size={48} color="var(--primary)" style={{ margin: '0 auto 20px' }} />
           <h2 style={{ color: 'white', fontSize: '36px', fontWeight: '800', marginBottom: '16px' }}>
@@ -391,8 +385,8 @@ export default function HomePage() {
             <button className="btn btn-primary btn-lg" onClick={() => navigate('/login')}>
               Đăng ký ngay
             </button>
-            <button className="btn btn-outline btn-lg" style={{ borderColor: '#64748b', color: '#94a3b8' }}>
-              Tìm hiểu thêm
+            <button className="btn btn-outline btn-lg" style={{ borderColor: '#64748b', color: '#94a3b8' }} onClick={() => navigate('/search')}>
+              Tìm chuyến xe
             </button>
           </div>
         </div>

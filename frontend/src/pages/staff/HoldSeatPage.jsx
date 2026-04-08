@@ -4,13 +4,12 @@ import api from '../../api/axios';
 
 const fmtTime = (iso) => iso ? new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '--:--';
 
-// Calculate minutes remaining from lockedAt + 5-min lock window
+// Calculate minutes remaining from lockedUntil (the actual expiry stored by backend)
 const minutesRemaining = (seat) => {
-  if (!seat.lockedAt) return 0;
-  const expiresAt = new Date(seat.lockedAt).getTime() + 5 * 60 * 1000;
-  const remaining = Math.max(0, Math.round((expiresAt - Date.now()) / 60000));
-  return remaining;
+  if (!seat.lockedUntil) return 0;
+  return Math.max(0, Math.round((new Date(seat.lockedUntil) - Date.now()) / 60000));
 };
+
 
 export default function HoldSeatPage() {
   const [seats, setSeats] = useState([]);
