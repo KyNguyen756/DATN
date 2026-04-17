@@ -12,6 +12,8 @@ import BookingPage from './pages/customer/BookingPage';
 import MyTicketsPage from './pages/customer/MyTicketsPage';
 import ProfilePage from './pages/customer/ProfilePage';
 import LoginPage from './pages/customer/LoginPage';
+import NewsListPage from './pages/customer/NewsListPage';
+import NewsDetailPage from './pages/customer/NewsDetailPage';
 
 // Staff Pages
 import StaffDashboard from './pages/staff/StaffDashboard';
@@ -29,6 +31,7 @@ import PromotionsPage from './pages/admin/PromotionsPage';
 import ReportsPage from './pages/admin/ReportsPage';
 import SettingsPage from './pages/admin/SettingsPage';
 import StationsPage from './pages/admin/StationsPage';
+import NewsPage from './pages/admin/NewsPage';
 
 import './index.css';
 
@@ -42,6 +45,8 @@ function App() {
           <Route path="search" element={<SearchPage />} />
           <Route path="trip/:id" element={<TripDetailPage />} />
           <Route path="login" element={<LoginPage />} />
+          <Route path="news" element={<NewsListPage />} />
+          <Route path="news/:slug" element={<NewsDetailPage />} />
 
           {/* Require login */}
           <Route path="booking" element={
@@ -78,6 +83,7 @@ function App() {
           <Route path="reports" element={<ReportsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="stations" element={<StationsPage />} />
+          <Route path="news" element={<NewsPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -525,3 +525,98 @@ tbody tr:last-child td {
   font-size: 16px;
   flex-shrink: 0;
 }
+
+/* ============ SPIN ANIMATION ============ */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ============ NEWS ARTICLE CONTENT ============ */
+/* Styles for HTML content rendered via dangerouslySetInnerHTML */
+.news-content h1,
+.news-content h2,
+.news-content h3,
+.news-content h4 {
+  font-weight: 800;
+  color: var(--gray-900);
+  margin: 1.4em 0 0.6em;
+  line-height: 1.3;
+}
+.news-content h1 { font-size: 24px; }
+.news-content h2 { font-size: 20px; border-bottom: 2px solid var(--gray-100); padding-bottom: 8px; }
+.news-content h3 { font-size: 17px; }
+.news-content h4 { font-size: 15px; }
+
+.news-content p {
+  margin-bottom: 1em;
+  line-height: 1.8;
+  color: var(--gray-700);
+}
+
+.news-content ul,
+.news-content ol {
+  padding-left: 1.5em;
+  margin-bottom: 1em;
+}
+.news-content li {
+  margin-bottom: 0.4em;
+  line-height: 1.7;
+  color: var(--gray-700);
+}
+
+.news-content blockquote {
+  border-left: 4px solid var(--primary);
+  margin: 1.2em 0;
+  padding: 12px 20px;
+  background: var(--primary-bg);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-style: italic;
+  color: var(--gray-600);
+}
+
+.news-content pre {
+  background: var(--gray-900);
+  color: #e2e8f0;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  overflow-x: auto;
+  font-size: 13px;
+  margin: 1em 0;
+}
+.news-content code {
+  background: var(--gray-100);
+  color: var(--danger);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'Courier New', monospace;
+}
+.news-content pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.news-content img {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  margin: 1em 0;
+  box-shadow: var(--shadow);
+}
+
+.news-content a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.news-content a:hover { color: var(--primary-dark); }
+
+.news-content strong { font-weight: 700; color: var(--gray-900); }
+.news-content em { font-style: italic; }
+
+.news-content hr {
+  border: none;
+  border-top: 2px solid var(--gray-100);
+  margin: 1.5em 0;
+}

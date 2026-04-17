@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 const navLinks = [
   { to: '/', label: 'Trang chủ' },
   { to: '/search', label: 'Tìm chuyến xe' },
+  { to: '/news', label: 'Tin tức' },
 ];
 
 export default function CustomerLayout() {

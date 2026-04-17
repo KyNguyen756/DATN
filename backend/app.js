@@ -12,6 +12,7 @@ const ticketRoutes = require("./routes/ticketRoutes");
 const statsRoutes = require("./routes/statsRoutes");
 const promotionRoutes = require("./routes/promotionRoutes");
 const reportRoutes = require("./routes/reportRoutes");
+const newsRoutes = require("./routes/newsRoutes");
 
 
 const app = express();
@@ -34,6 +35,7 @@ app.use("/api/tickets", ticketRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/promotions", promotionRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/news", newsRoutes);
 
 
 // Central error handler — catches errors thrown by asyncHandler
