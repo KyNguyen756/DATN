@@ -356,47 +356,49 @@ export default function QuickSalePage() {
                 <div className="empty-state"><Bus size={40} color="var(--gray-300)" /><div>Không có chuyến xe</div></div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '500px', overflowY: 'auto' }}>
-                  {trips.map(trip => (
-                    <button
-                      key={trip._id}
-                      onClick={() => handleSelectTrip(trip)}
-                      style={{
-                        width: '100%', textAlign: 'left', padding: '14px 16px', borderRadius: '12px',
-                        border: '2px solid var(--gray-200)', background: 'white', cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        ':hover': { borderColor: 'var(--primary)' },
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = 'var(--primary-bg)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--gray-200)'; e.currentTarget.style.background = 'white'; }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div style={{
-                            width: '40px', height: '40px', borderRadius: '10px', background: 'var(--primary-bg)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: '800', color: 'var(--primary)',
-                          }}>
-                            {(trip.bus?.name || 'X')[0]}
+                  {trips
+                    .filter(trip => trip.status !== 'cancelled' && trip.status !== 'completed')
+                    .map(trip => (
+                      <button
+                        key={trip._id}
+                        onClick={() => handleSelectTrip(trip)}
+                        style={{
+                          width: '100%', textAlign: 'left', padding: '14px 16px', borderRadius: '12px',
+                          border: '2px solid var(--gray-200)', background: 'white', cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          ':hover': { borderColor: 'var(--primary)' },
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = 'var(--primary-bg)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--gray-200)'; e.currentTarget.style.background = 'white'; }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div style={{
+                              width: '40px', height: '40px', borderRadius: '10px', background: 'var(--primary-bg)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: '800', color: 'var(--primary)',
+                            }}>
+                              {(trip.bus?.name || 'X')[0]}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span style={{ fontWeight: '700', fontSize: '14px' }}>{trip.fromStation?.city}</span>
+                                <ArrowRight size={13} color="var(--primary)" />
+                                <span style={{ fontWeight: '700', fontSize: '14px' }}>{trip.toStation?.city}</span>
+                              </div>
+                              <div className="flex items-center gap-3" style={{ marginTop: '3px' }}>
+                                <span style={{ fontSize: '11px', color: 'var(--gray-500)' }}>{trip.bus?.name}</span>
+                                <span className="badge badge-info" style={{ fontSize: '10px' }}>{typeLabels[trip.bus?.type] || trip.bus?.type}</span>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span style={{ fontWeight: '700', fontSize: '14px' }}>{trip.fromStation?.city}</span>
-                              <ArrowRight size={13} color="var(--primary)" />
-                              <span style={{ fontWeight: '700', fontSize: '14px' }}>{trip.toStation?.city}</span>
-                            </div>
-                            <div className="flex items-center gap-3" style={{ marginTop: '3px' }}>
-                              <span style={{ fontSize: '11px', color: 'var(--gray-500)' }}>{trip.bus?.name}</span>
-                              <span className="badge badge-info" style={{ fontSize: '10px' }}>{typeLabels[trip.bus?.type] || trip.bus?.type}</span>
-                            </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontWeight: '900', color: 'var(--primary)', fontSize: '16px' }}>{fmtTime(trip.departureTime)}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--gray-400)' }}>{fmtDate(trip.departureTime)}</div>
+                            <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--success)' }}>{trip.price?.toLocaleString()}đ</div>
                           </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontWeight: '900', color: 'var(--primary)', fontSize: '16px' }}>{fmtTime(trip.departureTime)}</div>
-                          <div style={{ fontSize: '11px', color: 'var(--gray-400)' }}>{fmtDate(trip.departureTime)}</div>
-                          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--success)' }}>{trip.price?.toLocaleString()}đ</div>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    ))}
                 </div>
               )}
             </div>

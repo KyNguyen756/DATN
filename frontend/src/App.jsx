@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import CustomerLayout from './layouts/CustomerLayout';
 import StaffLayout from './layouts/StaffLayout';
 import AdminLayout from './layouts/AdminLayout';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute, { AdminRoute, StaffRoute } from './components/ProtectedRoute';
 
 // Customer Pages
 import HomePage from './pages/customer/HomePage';
@@ -57,7 +57,7 @@ function App() {
 
         {/* Staff Portal — requires staff or admin role */}
         <Route path="/staff" element={
-          <ProtectedRoute role="staff"><StaffLayout /></ProtectedRoute>
+          <StaffRoute><StaffLayout /></StaffRoute>
         }>
           <Route index element={<StaffDashboard />} />
           <Route path="quick-sale" element={<QuickSalePage />} />
@@ -67,7 +67,7 @@ function App() {
 
         {/* Admin Dashboard — requires admin role */}
         <Route path="/admin" element={
-          <ProtectedRoute role="admin"><AdminLayout /></ProtectedRoute>
+          <AdminRoute><AdminLayout /></AdminRoute>
         }>
           <Route index element={<AdminDashboard />} />
           <Route path="routes" element={<RoutesPage />} />

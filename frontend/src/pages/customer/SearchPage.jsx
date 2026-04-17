@@ -38,7 +38,7 @@ function CityAutocomplete({ value, onChange, placeholder, id }) {
   useEffect(() => {
     api.get('/stations/cities')
       .then(res => setAllCities(res.data?.cities || res.data || []))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -159,6 +159,7 @@ export default function SearchPage() {
 
   // Client-side sort + filter
   const sortedFiltered = [...trips]
+    .filter(trip => trip.status !== 'cancelled' && trip.status !== 'completed')
     .filter(t => priceMax >= 2000000 || (t.price || 0) <= priceMax)
     .filter(t => !busType || t.bus?.type === busType)
     .sort((a, b) => {

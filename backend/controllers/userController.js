@@ -171,3 +171,29 @@ exports.deleteUser = asyncHandler(async (req, res) => {
   await UserProfile.findOneAndDelete({ user: req.params.id });
   res.json({ message: "User deleted" });
 });
+
+// PUT /api/users/:id/role  (admin only)
+// Allows admin to change another user's role (user / staff / admin)
+exports.changeUserRole = asyncHandler(async (req, res) => {
+  const { role } = req.body;
+  const ALLOWED_ROLES = ["user", "staff", "admin"];
+
+  if (!ALLOWED_ROLES.includes(role)) {
+    return res.status(400).json({ message: `role must be one of: ${ALLOWED_ROLES.join(", ")}` });
+  }
+
+  // Prevent admin from demoting themselves accidentally
+  if (req.params.id === req.user.id) {
+    return res.status(400).json({ message: "Cannot change your own role" });
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { role },
+    { new: true, runValidators: true }
+  ).select("-password");
+
+  if (!user) return res.status(404).json({ message: "User not found" });
+  res.json(user);
+});
+

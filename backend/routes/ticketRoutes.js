@@ -2,18 +2,22 @@ const express = require("express");
 const router = express.Router();
 const ticketController = require("../controllers/ticketController");
 const authMiddleware = require("../middleware/authMiddleware");
-const adminMiddleware = require("../middleware/adminMiddleware");
+const authorizeRoles = require("../middleware/authorizeRoles");
+const validateObjectId = require("../middleware/validateObjectId");
 
 // User: view own tickets
 router.get("/my", authMiddleware, ticketController.getMyTickets);
 
-// User/Admin: verify a ticket (staff check-in)
+// User/Staff: verify a ticket (staff check-in)
 router.post("/verify", authMiddleware, ticketController.verifyTicket);
 
-// Admin: all tickets
-router.get("/", authMiddleware, adminMiddleware, ticketController.getAllTickets);
+// User (owner) or Staff/Admin: cancel a single ticket
+router.patch("/:id/cancel", authMiddleware, validateObjectId(), ticketController.cancelTicket);
 
-// Create tickets for a booking (owner or admin)
+// Admin: all tickets
+router.get("/", authMiddleware, authorizeRoles("admin"), ticketController.getAllTickets);
+
+// Create tickets for a booking (owner or admin) — legacy
 router.post("/:bookingId", authMiddleware, ticketController.createTickets);
 
-module.exports = router;
+module.exports = router;

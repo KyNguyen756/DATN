@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Ticket, QrCode, Clock,
   Bus, LogOut, Menu, X, ChevronRight, Bell
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const navItems = [
   { to: '/staff', label: 'Dashboard', icon: LayoutDashboard },
@@ -15,6 +16,7 @@ const navItems = [
 export default function StaffLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--gray-100)' }}>
@@ -108,7 +110,7 @@ export default function StaffLayout() {
           </button>
           <div className="flex items-center gap-3">
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--gray-800)' }}>Nguyễn Văn A</div>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--gray-800)' }}>{user?.username}</div>
               <div style={{ fontSize: '11px', color: 'var(--gray-400)' }}>Nhân viên bán vé</div>
             </div>
             <div style={{

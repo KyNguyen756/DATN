@@ -1,14 +1,100 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Plus, Trash2, Shield, UserX, UserCheck, Loader, AlertCircle } from 'lucide-react';
+import {
+  Search, Trash2, Shield, UserX, UserCheck, Loader,
+  AlertCircle, ChevronDown, CheckCircle
+} from 'lucide-react';
 import api from '../../api/axios';
+import { useAuth } from '../../contexts/AuthContext';
 
 const roleConfig = {
-  user: { label: 'Khách hàng', cls: 'badge-gray' },
-  staff: { label: 'Nhân viên', cls: 'badge-info' },
-  admin: { label: 'Admin', cls: 'badge-warning' },
+  user:  { label: 'Khách hàng', cls: 'badge-gray' },
+  staff: { label: 'Nhân viên',  cls: 'badge-info' },
+  admin: { label: 'Admin',      cls: 'badge-warning' },
 };
 
+// Inline role picker dropdown
+function RolePicker({ userId, currentRole, onChanged, disabled }) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleSelect = async (newRole) => {
+    if (newRole === currentRole) { setOpen(false); return; }
+    setSaving(true);
+    setOpen(false);
+    try {
+      const res = await api.put(`/users/${userId}/role`, { role: newRole });
+      onChanged(res.data);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Cập nhật vai trò thất bại.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const rc = roleConfig[currentRole] || roleConfig.user;
+
+  return (
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      <button
+        disabled={disabled || saving}
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '5px',
+          padding: '4px 10px', borderRadius: '20px', border: '2px solid',
+          borderColor: currentRole === 'admin' ? '#F59E0B' : currentRole === 'staff' ? '#3B82F6' : '#9CA3AF',
+          background: 'white', cursor: 'pointer', fontSize: '12px', fontWeight: '700',
+          color: currentRole === 'admin' ? '#F59E0B' : currentRole === 'staff' ? '#3B82F6' : '#6B7280',
+          transition: 'all 0.15s',
+        }}
+      >
+        {saving
+          ? <Loader size={11} style={{ animation: 'spin 1s linear infinite' }} />
+          : <Shield size={11} />
+        }
+        {rc.label}
+        <ChevronDown size={10} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+      </button>
+
+      {open && (
+        <>
+          {/* Backdrop */}
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 99 }}
+            onClick={() => setOpen(false)}
+          />
+          <div style={{
+            position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 100,
+            background: 'white', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+            border: '1px solid var(--gray-200)', overflow: 'hidden', minWidth: '130px',
+          }}>
+            {Object.entries(roleConfig).map(([role, cfg]) => (
+              <button
+                key={role}
+                onClick={() => handleSelect(role)}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '9px 14px',
+                  border: 'none', background: role === currentRole ? 'var(--primary-bg)' : 'white',
+                  fontSize: '12px', fontWeight: role === currentRole ? '700' : '500',
+                  color: role === currentRole ? 'var(--primary)' : 'var(--gray-700)',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                }}
+                onMouseEnter={e => { if (role !== currentRole) e.currentTarget.style.background = 'var(--gray-50)'; }}
+                onMouseLeave={e => { if (role !== currentRole) e.currentTarget.style.background = 'white'; }}
+              >
+                {role === currentRole && <CheckCircle size={12} color="var(--primary)" />}
+                {role !== currentRole && <div style={{ width: 12 }} />}
+                {cfg.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function CustomersPage() {
+  const { user: currentUser } = useAuth();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [users, setUsers] = useState([]);
@@ -19,9 +105,10 @@ export default function CustomersPage() {
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
       const res = await api.get('/users', {
-        params: { search: search || undefined, page: 1, limit: 50 }
+        params: { search: search || undefined, page: 1, limit: 100 }
       });
       setUsers(res.data.users || []);
       setTotal(res.data.total || 0);
@@ -33,7 +120,7 @@ export default function CustomersPage() {
   }, [search]);
 
   useEffect(() => {
-    const t = setTimeout(fetchUsers, 350); // debounce
+    const t = setTimeout(fetchUsers, 350);
     return () => clearTimeout(t);
   }, [fetchUsers]);
 
@@ -65,6 +152,10 @@ export default function CustomersPage() {
     }
   };
 
+  const handleRoleChanged = (updatedUser) => {
+    setUsers(prev => prev.map(u => u._id === updatedUser._id ? { ...u, role: updatedUser.role } : u));
+  };
+
   const filtered = users.filter(u =>
     roleFilter === 'all' || u.role === roleFilter
   );
@@ -74,17 +165,17 @@ export default function CustomersPage() {
       <div className="page-header">
         <div>
           <h1 className="section-title">Khách hàng & Nhân viên</h1>
-          <p className="section-subtitle">Quản lý tài khoản và phân quyền người dùng ({total} tổng)</p>
+          <p className="section-subtitle">Quản lý tài khoản và phân quyền hệ thống ({total} tổng)</p>
         </div>
       </div>
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
         {[
-          { label: 'Tổng tài khoản', value: total, color: 'var(--primary)' },
-          { label: 'Khách hàng', value: users.filter(u => u.role === 'user').length, color: 'var(--gray-600)' },
-          { label: 'Nhân viên', value: users.filter(u => u.role === 'staff').length, color: 'var(--info)' },
-          { label: 'Đã khóa', value: users.filter(u => u.status === 'locked').length, color: 'var(--danger)' },
+          { label: 'Tổng tài khoản', value: total,                                         color: 'var(--primary)' },
+          { label: 'Khách hàng',     value: users.filter(u => u.role === 'user').length,   color: 'var(--gray-600)' },
+          { label: 'Nhân viên',      value: users.filter(u => u.role === 'staff').length,  color: 'var(--info)' },
+          { label: 'Đã khóa',        value: users.filter(u => u.status === 'locked').length, color: 'var(--danger)' },
         ].map((s, i) => (
           <div key={i} className="card" style={{ padding: '14px 18px', textAlign: 'center' }}>
             <div style={{ fontSize: '26px', fontWeight: '900', color: s.color }}>{s.value}</div>
@@ -97,7 +188,13 @@ export default function CustomersPage() {
       <div className="flex items-center gap-3" style={{ marginBottom: '16px', flexWrap: 'wrap' }}>
         <div className="relative" style={{ flex: 1, minWidth: '200px', maxWidth: '320px' }}>
           <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)' }} />
-          <input className="form-input" placeholder="Tên, email..." value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: '36px' }} />
+          <input
+            className="form-input"
+            placeholder="Tên, email..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ paddingLeft: '36px' }}
+          />
         </div>
         <div className="flex items-center gap-2">
           {['all', 'user', 'staff', 'admin'].map(r => (
@@ -142,18 +239,26 @@ export default function CustomersPage() {
               </thead>
               <tbody>
                 {filtered.map(u => {
-                  const rc = roleConfig[u.role] || roleConfig.user;
                   const isLocked = u.status === 'locked';
                   const isActing = actionId === u._id;
+                  const isSelf   = u._id === currentUser?._id;
                   return (
                     <tr key={u._id}>
                       <td>
                         <div className="flex items-center gap-2">
-                          <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', color: 'var(--primary)', fontSize: '13px', flexShrink: 0 }}>
+                          <div style={{
+                            width: '34px', height: '34px', borderRadius: '50%',
+                            background: 'var(--primary-bg)', flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontWeight: '800', color: 'var(--primary)', fontSize: '13px',
+                          }}>
                             {u.username?.[0]?.toUpperCase() || 'U'}
                           </div>
                           <div>
-                            <div style={{ fontWeight: '600', fontSize: '13px' }}>{u.username}</div>
+                            <div style={{ fontWeight: '600', fontSize: '13px' }}>
+                              {u.username}
+                              {isSelf && <span style={{ marginLeft: '6px', fontSize: '10px', color: 'var(--primary)', fontWeight: '700' }}>(Bạn)</span>}
+                            </div>
                             <div style={{ fontSize: '11px', color: isLocked ? 'var(--danger)' : 'var(--gray-400)' }}>
                               {isLocked ? '⛔ Đã khóa' : '✓ Hoạt động'}
                             </div>
@@ -161,7 +266,22 @@ export default function CustomersPage() {
                         </div>
                       </td>
                       <td style={{ fontSize: '13px', color: 'var(--gray-600)' }}>{u.email}</td>
-                      <td><span className={`badge ${rc.cls}`}>{rc.label}</span></td>
+
+                      {/* ── Inline role picker (admin-only feature) ─────────── */}
+                      <td>
+                        {isSelf ? (
+                          // Can't change own role
+                          <span className={`badge ${roleConfig[u.role]?.cls}`}>{roleConfig[u.role]?.label}</span>
+                        ) : (
+                          <RolePicker
+                            userId={u._id}
+                            currentRole={u.role}
+                            onChanged={handleRoleChanged}
+                            disabled={isActing}
+                          />
+                        )}
+                      </td>
+
                       <td>
                         <span className={`badge ${isLocked ? 'badge-danger' : 'badge-success'}`}>
                           {isLocked ? 'Đã khóa' : 'Hoạt động'}
@@ -175,7 +295,7 @@ export default function CustomersPage() {
                           <button
                             className="btn btn-ghost btn-sm"
                             title={isLocked ? 'Mở khóa' : 'Khóa tài khoản'}
-                            disabled={isActing}
+                            disabled={isActing || isSelf}
                             onClick={() => handleToggleLock(u)}
                             style={{ color: isLocked ? 'var(--success)' : 'var(--warning)' }}
                           >
@@ -184,7 +304,7 @@ export default function CustomersPage() {
                           <button
                             className="btn btn-ghost btn-sm"
                             title="Xóa tài khoản"
-                            disabled={isActing}
+                            disabled={isActing || isSelf}
                             style={{ color: 'var(--danger)' }}
                             onClick={() => handleDelete(u)}
                           >

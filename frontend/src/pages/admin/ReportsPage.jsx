@@ -1,14 +1,37 @@
 import { useState, useEffect } from 'react';
-import { Download, TrendingUp, BarChart3, FileText, Calendar, Loader, Users, Ticket } from 'lucide-react';
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  Download, TrendingUp, BarChart3, FileText, Calendar,
+  Loader, Users, Ticket, AlertCircle
+} from 'lucide-react';
+import {
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis,
+  CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import api from '../../api/axios';
+
+// Trigger a browser file download from a blob URL
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 export default function ReportsPage() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Date range for export
+  const today = new Date().toISOString().slice(0, 10);
+  const firstOfMonth = today.slice(0, 8) + '01';
+  const [fromDate, setFromDate] = useState(firstOfMonth);
+  const [toDate, setToDate]     = useState(today);
+  const [exporting, setExporting] = useState(null); // 'excel' | 'pdf' | null
+  const [exportError, setExportError] = useState('');
 
   useEffect(() => {
     api.get('/stats/admin')
@@ -17,9 +40,32 @@ export default function ReportsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleExport = async (format) => {
+    setExportError('');
+    setExporting(format);
+    try {
+      const res = await api.get(`/reports/${format}`, {
+        params: { from: fromDate || undefined, to: toDate || undefined },
+        responseType: 'blob',
+      });
+      const ext = format === 'excel' ? 'xlsx' : 'pdf';
+      const mime = format === 'excel'
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'application/pdf';
+      const blob = new Blob([res.data], { type: mime });
+      const label = `${fromDate || 'all'}_${toDate || 'all'}`;
+      downloadBlob(blob, `BaoCao_${label}.${ext}`);
+    } catch (err) {
+      setExportError('Không thể xuất báo cáo. Vui lòng thử lại.');
+      console.error(err);
+    } finally {
+      setExporting(null);
+    }
+  };
+
   const kpiCards = stats ? [
     { label: 'Tổng doanh thu', value: (stats.totalRevenue || 0).toLocaleString() + 'đ', sub: 'Từ tất cả đơn hàng', color: 'var(--primary)', bg: 'var(--primary-bg)', icon: TrendingUp },
-    { label: 'Tổng đặt vé', value: (stats.totalBookings || 0).toLocaleString(), sub: 'Tất cả thời gian', color: '#22C55E', bg: '#DCFCE7', icon: BarChart3 },
+    { label: 'Tổng đặt vé',   value: (stats.totalBookings || 0).toLocaleString(), sub: 'Tất cả thời gian', color: '#22C55E', bg: '#DCFCE7', icon: BarChart3 },
     { label: 'Tổng người dùng', value: (stats.totalUsers || 0).toLocaleString(), sub: 'Tài khoản đã đăng ký', color: '#3B82F6', bg: '#DBEAFE', icon: Users },
     { label: 'Tổng vé đã tạo', value: (stats.totalTickets || 0).toLocaleString(), sub: 'Bao gồm đã dùng & hủy', color: '#8B5CF6', bg: '#EDE9FE', icon: Ticket },
   ] : [];
@@ -31,15 +77,68 @@ export default function ReportsPage() {
           <h1 className="section-title">Báo cáo & Thống kê</h1>
           <p className="section-subtitle">Phân tích dữ liệu kinh doanh chi tiết</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="btn btn-primary">
-            <Download size={15} /> Xuất PDF
+
+        {/* ── Export panel ─────────────────────────────────────────────────── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
+          background: 'var(--gray-50)', borderRadius: '12px', padding: '12px 16px',
+        }}>
+          {/* Date range pickers */}
+          <div className="flex items-center gap-2" style={{ fontSize: '13px', color: 'var(--gray-600)' }}>
+            <Calendar size={14} color="var(--primary)" />
+            <span>Từ:</span>
+            <input
+              type="date"
+              className="form-input"
+              style={{ padding: '5px 8px', fontSize: '12px', width: '130px' }}
+              value={fromDate}
+              max={toDate}
+              onChange={e => setFromDate(e.target.value)}
+            />
+            <span>Đến:</span>
+            <input
+              type="date"
+              className="form-input"
+              style={{ padding: '5px 8px', fontSize: '12px', width: '130px' }}
+              value={toDate}
+              min={fromDate}
+              onChange={e => setToDate(e.target.value)}
+            />
+          </div>
+
+          {/* Export buttons */}
+          <button
+            id="btn-export-excel"
+            className="btn btn-outline"
+            onClick={() => handleExport('excel')}
+            disabled={!!exporting}
+          >
+            {exporting === 'excel'
+              ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} />
+              : <FileText size={14} />}
+            Xuất Excel
           </button>
-          <button className="btn btn-outline">
-            <FileText size={15} /> Xuất Excel
+
+          <button
+            id="btn-export-pdf"
+            className="btn btn-primary"
+            onClick={() => handleExport('pdf')}
+            disabled={!!exporting}
+          >
+            {exporting === 'pdf'
+              ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} />
+              : <Download size={14} />}
+            Xuất PDF
           </button>
         </div>
       </div>
+
+      {exportError && (
+        <div className="flex items-center gap-2" style={{ padding: '10px 16px', borderRadius: '10px', background: 'var(--danger-light)', color: 'var(--danger)', fontSize: '13px', marginBottom: '16px' }}>
+          <AlertCircle size={14} />{exportError}
+        </div>
+      )}
+
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px' }}>

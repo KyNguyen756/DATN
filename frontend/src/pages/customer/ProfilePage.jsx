@@ -138,18 +138,19 @@ export default function ProfilePage() {
     }
   };
 
-  const handleCancelTicket = async (bookingId) => {
-    if (!bookingId || !confirm('Hủy vé này? Không thể hoàn tác.')) return;
+  const handleCancelTicket = async (ticketId) => {
+    if (!ticketId || !confirm('Hủy vé này? Ghế sẽ được giải phóng và không thể hoàn tác.')) return;
     try {
-      await api.delete(`/bookings/${bookingId}`);
-      setTickets(prev => prev.map(t => {
-        const info = extractTicketInfo(t);
-        return info.bookingId === bookingId ? { ...t, status: 'cancelled' } : t;
-      }));
+      await api.patch(`/tickets/${ticketId}/cancel`);
+      // Update ticket status locally — by ticket ID (not booking ID)
+      setTickets(prev => prev.map(t =>
+        t._id === ticketId ? { ...t, status: 'cancelled' } : t
+      ));
     } catch (err) {
       alert(err.response?.data?.message || 'Không thể hủy vé.');
     }
   };
+
 
   const handleLogout = () => { logout(); navigate('/'); };
 
@@ -449,9 +450,9 @@ export default function ProfilePage() {
                                 <QrCode size={13} /> QR
                               </button>
                             )}
-                            {info.status === 'valid' && info.bookingId && (
+                            {info.status === 'valid' && (
                               <button className="btn btn-sm" style={{ background: 'var(--danger-light)', color: 'var(--danger)', fontSize: '12px' }}
-                                onClick={() => handleCancelTicket(info.bookingId)}>
+                                onClick={() => handleCancelTicket(info.id)}>
                                 Hủy vé
                               </button>
                             )}

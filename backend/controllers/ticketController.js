@@ -127,3 +127,64 @@ exports.verifyTicket = asyncHandler(async (req, res) => {
 
   res.json({ message: "Check-in thành công!", ticket });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PATCH /api/tickets/:id/cancel  (ticket owner or admin/staff)
+// Cancels a single ticket, releases its seat, and updates booking status if all
+// tickets for that booking are cancelled.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.cancelTicket = asyncHandler(async (req, res) => {
+  const TripSeat = require("../models/tripseatModel");
+  const Trip     = require("../models/tripModel");
+
+  const ticket = await Ticket.findById(req.params.id).populate("booking");
+  if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+
+  // ── IDOR guard: only the booking owner or staff/admin can cancel ──────────
+  const booking = ticket.booking;
+  const isOwner = booking?.user?.toString() === req.user.id;
+  const isStaffOrAdmin = ["admin", "staff"].includes(req.user.role);
+  if (!isOwner && !isStaffOrAdmin) {
+    return res.status(403).json({ message: "Forbidden — not your ticket" });
+  }
+
+  // ── Already cancelled or used ──────────────────────────────────────────────
+  if (ticket.status === "cancelled") {
+    return res.status(400).json({ message: "Ticket already cancelled" });
+  }
+  if (ticket.status === "used") {
+    return res.status(400).json({ message: "Cannot cancel a used ticket" });
+  }
+
+  // ── Block cancellation if trip is ongoing or completed ────────────────────
+  const trip = await Trip.findById(ticket.trip);
+  if (trip && ["ongoing", "completed"].includes(trip.status)) {
+    return res.status(400).json({
+      message: `Cannot cancel — trip is already ${trip.status}`
+    });
+  }
+
+  // ── Cancel ticket + release seat ──────────────────────────────────────────
+  ticket.status = "cancelled";
+  await ticket.save();
+
+  await TripSeat.findByIdAndUpdate(ticket.seat, {
+    status: "available",
+    lockedBy: null,
+    lockedUntil: null
+  });
+
+  // ── If all tickets for this booking are cancelled, cancel the booking too ──
+  if (booking) {
+    const remaining = await Ticket.countDocuments({
+      booking: booking._id,
+      status: { $ne: "cancelled" }
+    });
+    if (remaining === 0) {
+      await Booking.findByIdAndUpdate(booking._id, { bookingStatus: "cancelled" });
+    }
+  }
+
+  res.json({ message: "Ticket cancelled successfully", ticketId: ticket._id });
+});
+

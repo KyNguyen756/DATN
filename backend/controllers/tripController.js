@@ -2,6 +2,7 @@ const Trip = require("../models/tripModel");
 const TripSeat = require("../models/tripseatModel");
 const Station = require("../models/stationModel");
 const asyncHandler = require("../utils/asyncHandler");
+const { computeDynamicStatus } = require("../utils/tripStatusCron");
 
 // Helper: auto-release expired locks for a set of trip IDs and return available counts
 async function enrichWithSeatCounts(trips) {
@@ -126,6 +127,17 @@ exports.getTripById = asyncHandler(async (req, res) => {
     .populate("bus");
 
   if (!trip) return res.status(404).json({ message: "Trip not found" });
+
+  // Dynamic status fallback: compute real-time status between cron runs
+  const dynamicStatus = computeDynamicStatus(trip);
+  if (dynamicStatus !== trip.status && trip.status !== "cancelled") {
+    // Non-blocking update (fire and forget)
+    Trip.findByIdAndUpdate(trip._id, { status: dynamicStatus }).exec();
+    const tripObj = trip.toObject();
+    tripObj.status = dynamicStatus;
+    return res.json(tripObj);
+  }
+
   res.json(trip);
 });
 
