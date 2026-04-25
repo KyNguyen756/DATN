@@ -36,15 +36,15 @@ export default function MyTicketsPage() {
   useEffect(() => { fetchTickets(); }, []);
 
   const handleCancel = async (ticket) => {
-    if (!confirm(`Bạn có chắc muốn hủy vé ${ticket.code || ticket._id}?`)) return;
-    setCancellingId(ticket._id);
+    if (!ticket || !confirm('Hủy vé này? Ghế sẽ được giải phóng và không thể hoàn tác.')) return;
     try {
-      await api.delete(`/bookings/${ticket.booking?._id || ticket.booking}`);
-      await fetchTickets(); // refresh list
+      await api.patch(`/tickets/${ticket._id}/cancel`);
+      // Update ticket status locally — by ticket ID (not booking ID)
+      setTickets(prev => prev.map(t =>
+        t._id === ticket._id ? { ...t, status: 'cancelled' } : t
+      ));
     } catch (err) {
       alert(err.response?.data?.message || 'Không thể hủy vé.');
-    } finally {
-      setCancellingId(null);
     }
   };
 

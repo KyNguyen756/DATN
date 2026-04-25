@@ -9,10 +9,10 @@ import api from '../../api/axios';
 
 // Static feature cards — these are genuine product features, not fake metrics
 const features = [
-  { icon: Zap,         title: 'Đặt vé siêu nhanh',   desc: 'Chỉ 3 bước để có vé xe trong tay',          color: '#FF6B35' },
-  { icon: Shield,      title: 'Thanh toán bảo mật',   desc: 'Mã hóa SSL 256-bit, an toàn tuyệt đối',     color: '#22C55E' },
-  { icon: Bus,         title: 'Nhiều tuyến xe',        desc: 'Mạng lưới chuyến xe phủ rộng toàn quốc',    color: '#F59E0B' },
-  { icon: Headphones,  title: 'Hỗ trợ tận tình',      desc: 'Đội ngũ CSKH luôn sẵn sàng hỗ trợ bạn',    color: '#3B82F6' },
+  { icon: Zap, title: 'Đặt vé siêu nhanh', desc: 'Chỉ 3 bước để có vé xe trong tay', color: '#FF6B35' },
+  { icon: Shield, title: 'Thanh toán bảo mật', desc: 'Mã hóa SSL 256-bit, an toàn tuyệt đối', color: '#22C55E' },
+  { icon: Bus, title: 'Nhiều tuyến xe', desc: 'Mạng lưới chuyến xe phủ rộng toàn quốc', color: '#F59E0B' },
+  { icon: Headphones, title: 'Hỗ trợ tận tình', desc: 'Đội ngũ CSKH luôn sẵn sàng hỗ trợ bạn', color: '#3B82F6' },
 ];
 
 export default function HomePage() {
@@ -45,15 +45,17 @@ export default function HomePage() {
   useEffect(() => {
     api.get('/stations/cities')
       .then(res => setCities(res.data?.cities || res.data || []))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Fetch recent / popular trips (first page)
   useEffect(() => {
     api.get('/trips', { params: { limit: 6 } })
       .then(res => setPopularTrips(res.data?.trips || res.data || []))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
+
+  const filteredTrips = popularTrips
 
   // Fetch active promotions
   useEffect(() => {
@@ -63,14 +65,14 @@ export default function HomePage() {
         const notMaxed = p.maxUses === null || (p.usedCount || 0) < (p.maxUses || Infinity);
         return notExpired && notMaxed;
       }).slice(0, 3)))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Fetch real public stats (totalTickets, totalTrips, totalUsers)
   useEffect(() => {
     api.get('/stats/summary')
       .then(res => setPublicStats(res.data))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const handleSearch = () => {
@@ -276,7 +278,7 @@ export default function HomePage() {
             </button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-            {popularTrips.length > 0 ? popularTrips.map((t, i) => (
+            {filteredTrips.length > 0 ? filteredTrips.map((t, i) => (
               <div key={t._id || i} className="card card-hover" style={{ padding: '20px', cursor: 'pointer' }}
                 onClick={() => navigate(`/trip/${t._id}`)}>
                 <div className="flex items-center justify-between" style={{ marginBottom: '14px' }}>
@@ -294,7 +296,7 @@ export default function HomePage() {
                   </div>
                   <div className="flex items-center gap-1" style={{ color: 'var(--gray-500)', fontSize: '13px' }}>
                     <Clock size={13} />
-                    {new Date(t.departureTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(t.departureTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
                   </div>
                 </div>
                 {t.availableSeats !== undefined && (

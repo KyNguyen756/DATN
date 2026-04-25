@@ -28,7 +28,7 @@ export default function CustomerLayout() {
         <div className="container flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1"><Phone size={12} /> 1900 1234</span>
-            <span className="flex items-center gap-1"><Mail size={12} /> hotro@vexebus.vn</span>
+            <span className="flex items-center gap-1"><Mail size={12} /> hotro@slimbus.vn</span>
           </div>
           <div className="flex items-center gap-4">
             {isStaff && <Link to="/staff" style={{ color: '#94a3b8' }}>Nhân viên</Link>}
