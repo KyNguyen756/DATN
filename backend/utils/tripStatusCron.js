@@ -95,8 +95,7 @@ async function runStatusUpdate() {
 }
 
 function startTripStatusCron() {
-  // Run immediately on startup, then every 5 minutes
-  runStatusUpdate();
+  // Run every 5 minutes
   cron.schedule("*/5 * * * *", runStatusUpdate);
   console.log("[TripStatusCron] Started — runs every 5 minutes");
 }
