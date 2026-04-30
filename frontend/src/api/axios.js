@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://datn-backend-bsyw.onrender.com',
+  baseURL: 'https://datn-backend-bsyw.onrender.com/api',
   timeout: 15000,
 });
 
