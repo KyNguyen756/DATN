@@ -50,12 +50,14 @@ export default function HomePage() {
 
   // Fetch recent / popular trips (first page)
   useEffect(() => {
-    api.get('/trips', { params: { limit: 6 } })
+    api.get('/trips')
       .then(res => setPopularTrips(res.data?.trips || res.data || []))
       .catch(() => { });
   }, []);
 
-  const filteredTrips = popularTrips
+  const filteredTrips = popularTrips.filter(
+    trip => trip.status === "scheduled"
+  );
 
   // Fetch active promotions
   useEffect(() => {
