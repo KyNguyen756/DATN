@@ -38,6 +38,18 @@ function createPaymentUrl({
   orderInfo,
   ipAddr,
 }) {
+  // ── Kiểm tra env vars bắt buộc ──────────────────────────────────────────
+  if (!tmnCode || !secretKey || !vnpUrl || !returnUrl) {
+    const missing = [];
+    if (!tmnCode)   missing.push("VNP_TMN_CODE");
+    if (!secretKey) missing.push("VNP_HASH_SECRET");
+    if (!vnpUrl)    missing.push("VNP_URL");
+    if (!returnUrl) missing.push("VNP_RETURN_URL");
+    throw new Error(
+      `VNPay chưa được cấu hình đầy đủ. Thiếu biến môi trường: ${missing.join(", ")}`
+    );
+  }
+
   const date = new Date();
 
   const createDate =

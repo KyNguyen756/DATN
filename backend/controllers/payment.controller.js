@@ -142,12 +142,18 @@ exports.createVNPayPayment = asyncHandler(async (req, res) => {
     "127.0.0.1";
 
   // Tạo URL thanh toán và txnRef duy nhất
-  const { paymentUrl, txnRef } = createPaymentUrl({
-    orderId:   bookingId,
-    amount:    booking.finalPrice,
-    orderInfo: `Thanh toan ve xe - ${bookingId}`,
-    ipAddr,
-  });
+  let paymentUrl, txnRef;
+  try {
+    ({ paymentUrl, txnRef } = createPaymentUrl({
+      orderId:   bookingId,
+      amount:    booking.finalPrice,
+      orderInfo: `Thanh toan ve xe - ${bookingId}`,
+      ipAddr,
+    }));
+  } catch (err) {
+    console.error("[VNPay Create] 🔥 Lỗi tạo URL thanh toán:", err.message);
+    return res.status(500).json({ message: err.message || "Không thể tạo URL thanh toán VNPay" });
+  }
 
   // Lưu txnRef + đánh dấu phương thức thanh toán để đối soát sau
   booking.vnpayTxnRef   = txnRef;
