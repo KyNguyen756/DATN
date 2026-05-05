@@ -13,12 +13,18 @@ const statsRoutes = require("./routes/statsRoutes");
 const promotionRoutes = require("./routes/promotionRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const newsRoutes = require("./routes/newsRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 
 
 const app = express();
 
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:3000", "https://datn-green.vercel.app"],
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:3000",
+    "https://datn-green.vercel.app",
+  ],
   credentials: true
 }));
 
@@ -37,6 +43,7 @@ app.use("/api/stats", statsRoutes);
 app.use("/api/promotions", promotionRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/news", newsRoutes);
+app.use("/api/payment", paymentRoutes);
 
 
 // Central error handler — catches errors thrown by asyncHandler

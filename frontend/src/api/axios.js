@@ -1,7 +1,10 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://datn-backend-bsyw.onrender.com/api',
+  // ==================== CHUYỂN SANG PRODUCTION ====================
+  // baseURL: 'http://localhost:5000/api',        // ← Local Backend
+  baseURL: 'https://datn-backend-bsyw.onrender.com/api',  // ← Production (Render)
+
   timeout: 15000,
 });
 
@@ -17,7 +20,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// On 401: clear stale credentials and reload to login
+// On 401: clear stale credentials
 api.interceptors.response.use(
   (response) => response,
   (error) => {

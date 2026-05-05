@@ -14,6 +14,7 @@ import ProfilePage from './pages/customer/ProfilePage';
 import LoginPage from './pages/customer/LoginPage';
 import NewsListPage from './pages/customer/NewsListPage';
 import NewsDetailPage from './pages/customer/NewsDetailPage';
+import PaymentResultPage from './pages/customer/PaymentResultPage';
 
 // Staff Pages
 import StaffDashboard from './pages/staff/StaffDashboard';
@@ -57,6 +58,10 @@ function App() {
           } />
           <Route path="profile" element={
             <ProtectedRoute><ProfilePage /></ProtectedRoute>
+          } />
+          {/* Trang kết quả thanh toán VNPay — cần đăng nhập */}
+          <Route path="payment/result" element={
+            <ProtectedRoute><PaymentResultPage /></ProtectedRoute>
           } />
         </Route>
 

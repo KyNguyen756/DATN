@@ -123,39 +123,61 @@ exports.checkout = asyncHandler(async (req, res) => {
     note: note || ""
   });
 
-  // 6. Mark seats as booked
+  // 6. Đánh dấu ghế đã đặt (locked → booked)
   await TripSeat.updateMany(
     { _id: { $in: seatIds } },
     { status: "booked", lockedBy: null, lockedUntil: null }
   );
 
-  // 7. Generate tickets for each seat (atomic: all or nothing via Promise.all)
-  const ticketDocs = [];
-  for (const seatDoc of seats) {
-    const code = await generateUniqueTicketCode();
-    const ticket = new Ticket({
-      booking: booking._id,
-      trip: tripId,
-      seat: seatDoc._id,
-      code
-    });
-    const qrPayload = JSON.stringify({ ticketId: ticket._id, code: ticket.code, trip: tripId });
-    ticket.qrCode = await QRCode.toDataURL(qrPayload);
-    ticketDocs.push(ticket);
+  // 7. Tạo vé — CHỈ tạo ngay nếu KHÔNG phải thanh toán VNPay
+  //
+  //    • cod / cash / other → tạo vé ngay (thanh toán khi nhận hoặc tại quầy)
+  //    • vnpay             → KHÔNG tạo vé ở đây
+  //                          Vé sẽ được tạo tự động bởi IPN handler
+  //                          (controllers/payment.controller.js → vnpayIPN)
+  //                          khi VNPay xác nhận thanh toán thành công.
+  //
+  //    Lý do: tránh cấp vé hợp lệ cho đơn hàng chưa được thanh toán.
+
+  let createdTickets = [];
+
+  if ((paymentMethod || "cod") !== "vnpay") {
+    // Thanh toán không qua VNPay → tạo vé ngay lập tức
+    const ticketDocs = [];
+    for (const seatDoc of seats) {
+      const code = await generateUniqueTicketCode();
+      const ticket = new Ticket({
+        booking: booking._id,
+        trip:    tripId,
+        seat:    seatDoc._id,
+        code,
+      });
+      const qrPayload = JSON.stringify({
+        ticketId: ticket._id,
+        code:     ticket.code,
+        trip:     tripId,
+        booking:  booking._id,
+      });
+      ticket.qrCode = await QRCode.toDataURL(qrPayload);
+      ticketDocs.push(ticket);
+    }
+    createdTickets = await Ticket.insertMany(ticketDocs);
   }
+  // else: vnpay → vé sẽ được tạo bởi IPN sau khi thanh toán xác nhận
 
-  const createdTickets = await Ticket.insertMany(ticketDocs);
-
-  // 8. Return enriched response
+  // 8. Trả về kết quả
+  //    - tickets: [] nếu là vnpay (frontend biết cần chờ thanh toán xong)
+  //    - requiresPayment: true → frontend redirect sang VNPay
   res.status(201).json({
     booking,
     tickets: createdTickets,
+    requiresPayment: booking.paymentMethod === "vnpay",
     summary: {
       totalPrice,
       discountAmount,
       finalPrice,
-      promoApplied: !!promoCode
-    }
+      promoApplied: !!promoCode,
+    },
   });
 });
 

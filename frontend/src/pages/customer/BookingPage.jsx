@@ -14,7 +14,7 @@ const fmtDate = (iso) =>
 
 const PAYMENT_METHODS = [
   { id: 'cod', label: 'COD - Nhận tại quầy', icon: CreditCard, note: 'Thanh toán khi lên xe' },
-  { id: 'vnpay', label: 'VNPay', icon: CreditCard, note: 'Chuyển hướng tới VNPay (Sắp có)' },
+  { id: 'vnpay', label: 'VNPay', icon: CreditCard, note: 'Thanh toán an toàn qua VNPay' },
   { id: 'momo', label: 'Ví MoMo', icon: CreditCard, note: 'Quét QR MoMo (Sắp có)' },
 ];
 
@@ -123,6 +123,7 @@ export default function BookingPage() {
     setSubmitting(true);
 
     try {
+      // Bước 1: Tạo booking (chưa tạo vé nếu là VNPay)
       const res = await api.post('/bookings/checkout', {
         tripId: trip._id,
         seatIds,
@@ -135,6 +136,18 @@ export default function BookingPage() {
       });
 
       clearSession();
+
+      // Bước 2: Nếu server yêu cầu thanh toán online (VNPay) → tạo link và redirect
+      if (res.data.requiresPayment && paymentMethod === 'vnpay') {
+        const payRes = await api.post('/payment/vnpay/create', {
+          bookingId: res.data.booking._id,
+        });
+        // Chuyển hướng toàn trang sang cổng thanh toán VNPay
+        window.location.href = payRes.data.paymentUrl;
+        return; // dừng xử lý, trang sẽ bị navigate đi
+      }
+
+      // Bước 3: Phương thức khác (COD...) → hiển thị màn hình thành công ngay
       setResult(res.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Đặt vé thất bại. Vui lòng thử lại.');

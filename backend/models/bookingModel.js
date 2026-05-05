@@ -75,6 +75,12 @@ const bookingSchema = new mongoose.Schema({
   paymentMethod: { type: String, default: "cod" },
   note: { type: String, default: "" },
 
+  // Mã giao dịch VNPay trả về (vnp_TransactionNo) — dùng để đối soát hoàn tiền
+  transactionId: { type: String, default: null },
+
+  // vnp_TxnRef gửi lên VNPay (dạng bookingId_timestamp) — dùng để tra cứu GD
+  vnpayTxnRef: { type: String, default: null },
+
   // Printed receipt number for counter sales
   receiptNumber: { type: String, default: null }
 
