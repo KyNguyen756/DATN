@@ -159,7 +159,7 @@ export default function SearchPage() {
 
   // Client-side sort + filter
   const sortedFiltered = [...trips]
-    .filter(trip => trip.status !== 'cancelled' && trip.status !== 'completed')
+    .filter(trip => trip.status !== 'cancelled' && trip.status !== 'completed' && trip.status !== 'ongoing')
     .filter(t => priceMax >= 2000000 || (t.price || 0) <= priceMax)
     .filter(t => !busType || t.bus?.type === busType)
     .sort((a, b) => {
