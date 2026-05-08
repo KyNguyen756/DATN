@@ -7,11 +7,9 @@ const authMiddleware = require("../middleware/authMiddleware");
 // Create VNPay payment URL (requires auth — user must own the booking)
 router.post("/create-payment-url", authMiddleware, vnpayController.createPaymentUrl);
 
-// VNPay IPN callback — server-to-server, NO auth (VNPay calls this directly)
-router.get("/ipn", vnpayController.vnpayIpn);
-
-// VNPay return URL — browser redirect after payment, NO auth needed
-// (user may have lost session during redirect; we verify via checksum)
+// VNPay return URL — browser redirect after payment
+// Handles: checksum verify → payment processing → ticket creation → response
+// NO auth required (user browser redirect from VNPay — session may be intact via localStorage)
 router.get("/return", vnpayController.vnpayReturn);
 
 module.exports = router;

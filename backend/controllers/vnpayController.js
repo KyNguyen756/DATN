@@ -27,14 +27,14 @@ function vnpayDateFormat(date) {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 }
 
-/** Generate a unique VNPay txn ref: timestamp + random suffix (unique per day as VNPay requires) */
+/** Generate a unique VNPay txn ref: timestamp + random suffix */
 function generateTxnRef() {
   const now = Date.now();
   const random = Math.floor(Math.random() * 9000) + 1000;
   return `${now}${random}`;
 }
 
-/** Reuse ticket code generator from bookingController */
+/** Generate unique ticket code */
 async function generateUniqueTicketCode() {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -137,11 +137,24 @@ exports.createPaymentUrl = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-// GET /api/vnpay/ipn
-// VNPay IPN callback — server-to-server
-// CRITICAL: This is the ONLY place we confirm payment
+// GET /api/vnpay/return
+// VNPay return URL — THE SINGLE payment processing endpoint.
+//
+// This endpoint:
+//   1. Verifies VNPay checksum (HMAC-SHA512)
+//   2. Validates amount matches DB
+//   3. Updates booking status (idempotent — skips if already processed)
+//   4. Creates tickets + QR codes on success
+//   5. Releases seats on failure
+//   6. Returns full booking data for frontend display
+//
+// IDEMPOTENCY:
+//   - Uses `paymentStatus` as a state gate.
+//   - If booking is already "paid" → returns existing tickets (no duplicates).
+//   - If booking is already "failed" → returns failure info.
+//   - Only processes when `paymentStatus === "pending"`.
 // ─────────────────────────────────────────────
-exports.vnpayIpn = asyncHandler(async (req, res) => {
+exports.vnpayReturn = asyncHandler(async (req, res) => {
   let vnp_Params = req.query;
   const secureHash = vnp_Params["vnp_SecureHash"];
 
@@ -157,46 +170,122 @@ exports.vnpayIpn = asyncHandler(async (req, res) => {
   const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
 
   // 1. Verify checksum
-  if (secureHash !== signed) {
-    console.error("[VNPay IPN] Invalid checksum");
-    return res.status(200).json({ RspCode: "97", Message: "Invalid checksum" });
+  const isValid = secureHash === signed;
+  const responseCode = vnp_Params["vnp_ResponseCode"];
+  const txnRef = vnp_Params["vnp_TxnRef"];
+
+  if (!isValid) {
+    console.error(`[VNPay Return] Invalid checksum for txnRef: ${txnRef}`);
+    return res.json({
+      isValid: false,
+      isSuccess: false,
+      booking: null,
+      tickets: [],
+      message: "Chữ ký không hợp lệ. Dữ liệu có thể bị giả mạo."
+    });
   }
 
-  const txnRef = vnp_Params["vnp_TxnRef"];
-  const rspCode = vnp_Params["vnp_ResponseCode"];
-  const transactionStatus = vnp_Params["vnp_TransactionStatus"];
-  const vnpAmount = parseInt(vnp_Params["vnp_Amount"]) / 100; // Convert back from VNPay format
-
-  // 2. Find booking by txnRef
+  // 2. Find booking
   const booking = await Booking.findOne({ vnpTxnRef: txnRef });
   if (!booking) {
-    console.error(`[VNPay IPN] Order not found: ${txnRef}`);
-    return res.status(200).json({ RspCode: "01", Message: "Order not found" });
+    console.error(`[VNPay Return] Booking not found for txnRef: ${txnRef}`);
+    return res.json({
+      isValid: true,
+      isSuccess: false,
+      booking: null,
+      tickets: [],
+      message: "Không tìm thấy đơn đặt vé tương ứng."
+    });
   }
 
-  // 3. Validate amount matches
+  // 3. Determine VNPay payment result
+  const isPaymentSuccess = responseCode === "00";
+
+  // ── IDEMPOTENT CHECK ──────────────────────────────────────
+  // If already processed, just return current state (no DB mutation)
+  if (booking.paymentStatus === "paid") {
+    // Already paid — return existing booking + tickets (refresh-safe)
+    console.log(`[VNPay Return] Already paid, returning existing data: ${txnRef}`);
+
+    const populatedBooking = await Booking.findById(booking._id)
+      .populate({
+        path: "trip",
+        populate: [
+          { path: "fromStation" },
+          { path: "toStation" },
+          { path: "bus" }
+        ]
+      })
+      .populate({ path: "seats", populate: { path: "seat" } });
+
+    const tickets = await Ticket.find({ booking: booking._id });
+
+    return res.json({
+      isValid: true,
+      isSuccess: true,
+      responseCode,
+      txnRef,
+      booking: populatedBooking,
+      tickets,
+      amount: booking.finalPrice,
+      bankCode: booking.vnpBankCode,
+      transactionNo: booking.vnpTransactionNo,
+      message: "Thanh toán thành công"
+    });
+  }
+
+  if (booking.paymentStatus === "failed") {
+    // Already failed — return failure info (refresh-safe)
+    console.log(`[VNPay Return] Already failed, returning existing data: ${txnRef}`);
+
+    const populatedBooking = await Booking.findById(booking._id)
+      .populate({
+        path: "trip",
+        populate: [
+          { path: "fromStation" },
+          { path: "toStation" },
+          { path: "bus" }
+        ]
+      })
+      .populate({ path: "seats", populate: { path: "seat" } });
+
+    return res.json({
+      isValid: true,
+      isSuccess: false,
+      responseCode: booking.vnpResponseCode,
+      txnRef,
+      booking: populatedBooking,
+      tickets: [],
+      amount: booking.finalPrice,
+      message: "Thanh toán thất bại"
+    });
+  }
+
+  // ── FIRST-TIME PROCESSING (paymentStatus === "pending") ───
+
+  // 4. Validate amount
+  const vnpAmount = parseInt(vnp_Params["vnp_Amount"]) / 100;
   if (booking.finalPrice !== vnpAmount) {
-    console.error(`[VNPay IPN] Amount mismatch: expected ${booking.finalPrice}, got ${vnpAmount}`);
-    return res.status(200).json({ RspCode: "04", Message: "Invalid amount" });
+    console.error(`[VNPay Return] Amount mismatch: expected ${booking.finalPrice}, got ${vnpAmount}`);
+    return res.json({
+      isValid: true,
+      isSuccess: false,
+      booking: null,
+      tickets: [],
+      message: "Số tiền không khớp. Vui lòng liên hệ hỗ trợ."
+    });
   }
 
-  // 4. Check if already processed (idempotent / anti-duplicate)
-  if (booking.paymentStatus !== "pending") {
-    console.log(`[VNPay IPN] Order already confirmed: ${txnRef}, status: ${booking.paymentStatus}`);
-    return res.status(200).json({ RspCode: "02", Message: "Order already confirmed" });
-  }
-
-  // 5. Process payment result
-  if (rspCode === "00" && transactionStatus === "00") {
-    // ── SUCCESS ──
+  if (isPaymentSuccess) {
+    // ── SUCCESS: update booking + create tickets ──
     booking.paymentStatus = "paid";
     booking.vnpTransactionNo = vnp_Params["vnp_TransactionNo"] || null;
     booking.vnpBankCode = vnp_Params["vnp_BankCode"] || null;
-    booking.vnpResponseCode = rspCode;
+    booking.vnpResponseCode = responseCode;
     booking.paidAt = new Date();
     await booking.save();
 
-    // Generate tickets now that payment is confirmed
+    // Generate tickets
     const seatDocs = await TripSeat.find({ _id: { $in: booking.seats } }).populate("seat");
     const ticketDocs = [];
     for (const seatDoc of seatDocs) {
@@ -219,11 +308,37 @@ exports.vnpayIpn = asyncHandler(async (req, res) => {
       await Ticket.insertMany(ticketDocs);
     }
 
-    console.log(`[VNPay IPN] Payment SUCCESS for booking ${booking._id}, txnRef: ${txnRef}`);
+    console.log(`[VNPay Return] Payment SUCCESS — booking: ${booking._id}, txnRef: ${txnRef}`);
+
+    // Return populated booking + fresh tickets
+    const populatedBooking = await Booking.findById(booking._id)
+      .populate({
+        path: "trip",
+        populate: [
+          { path: "fromStation" },
+          { path: "toStation" },
+          { path: "bus" }
+        ]
+      })
+      .populate({ path: "seats", populate: { path: "seat" } });
+
+    return res.json({
+      isValid: true,
+      isSuccess: true,
+      responseCode,
+      txnRef,
+      booking: populatedBooking,
+      tickets: ticketDocs,
+      amount: booking.finalPrice,
+      bankCode: vnp_Params["vnp_BankCode"] || null,
+      transactionNo: vnp_Params["vnp_TransactionNo"] || null,
+      message: "Thanh toán thành công"
+    });
+
   } else {
-    // ── FAILED ──
+    // ── FAILED: update booking + release seats ──
     booking.paymentStatus = "failed";
-    booking.vnpResponseCode = rspCode;
+    booking.vnpResponseCode = responseCode;
     await booking.save();
 
     // Release seats back to available
@@ -232,70 +347,29 @@ exports.vnpayIpn = asyncHandler(async (req, res) => {
       { status: "available", lockedBy: null, lockedUntil: null }
     );
 
-    console.log(`[VNPay IPN] Payment FAILED for booking ${booking._id}, code: ${rspCode}`);
+    console.log(`[VNPay Return] Payment FAILED — booking: ${booking._id}, code: ${responseCode}`);
+
+    const populatedBooking = await Booking.findById(booking._id)
+      .populate({
+        path: "trip",
+        populate: [
+          { path: "fromStation" },
+          { path: "toStation" },
+          { path: "bus" }
+        ]
+      })
+      .populate({ path: "seats", populate: { path: "seat" } });
+
+    return res.json({
+      isValid: true,
+      isSuccess: false,
+      responseCode,
+      txnRef,
+      booking: populatedBooking,
+      tickets: [],
+      amount: booking.finalPrice,
+      bankCode: vnp_Params["vnp_BankCode"] || null,
+      message: "Thanh toán thất bại"
+    });
   }
-
-  // Return success to VNPay (always 200 with RspCode)
-  return res.status(200).json({ RspCode: "00", Message: "Confirm Success" });
 });
-
-// ─────────────────────────────────────────────
-// GET /api/vnpay/return
-// VNPay return URL — browser redirect after payment
-// NOTE: This does NOT update payment status (IPN does that)
-// Only verifies checksum and returns display info to frontend
-// ─────────────────────────────────────────────
-exports.vnpayReturn = asyncHandler(async (req, res) => {
-  let vnp_Params = req.query;
-  const secureHash = vnp_Params["vnp_SecureHash"];
-
-  delete vnp_Params["vnp_SecureHash"];
-  delete vnp_Params["vnp_SecureHashType"];
-
-  vnp_Params = sortObject(vnp_Params);
-
-  const secretKey = process.env.VNP_HASH_SECRET;
-  const signData = qs.stringify(vnp_Params, { encode: false });
-  const hmac = crypto.createHmac("sha512", secretKey);
-  const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
-
-  const isValid = secureHash === signed;
-  const responseCode = vnp_Params["vnp_ResponseCode"];
-  const txnRef = vnp_Params["vnp_TxnRef"];
-  const isSuccess = isValid && responseCode === "00";
-
-  // Look up booking with full population for frontend display
-  const booking = await Booking.findOne({ vnpTxnRef: txnRef })
-    .populate({
-      path: "trip",
-      populate: [
-        { path: "fromStation" },
-        { path: "toStation" },
-        { path: "bus" }
-      ]
-    })
-    .populate({ path: "seats", populate: { path: "seat" } });
-
-  // Fetch tickets if payment was successful
-  let tickets = [];
-  if (isSuccess && booking) {
-    tickets = await Ticket.find({ booking: booking._id });
-  }
-
-  res.json({
-    isValid,
-    responseCode,
-    txnRef,
-    isSuccess,
-    booking: booking || null,
-    tickets,
-    amount: parseInt(vnp_Params["vnp_Amount"] || "0") / 100,
-    bankCode: vnp_Params["vnp_BankCode"] || null,
-    transactionNo: vnp_Params["vnp_TransactionNo"] || null,
-    payDate: vnp_Params["vnp_PayDate"] || null,
-    message: isValid
-      ? (responseCode === "00" ? "Thanh toán thành công" : "Thanh toán thất bại")
-      : "Dữ liệu không hợp lệ"
-  });
-});
-
