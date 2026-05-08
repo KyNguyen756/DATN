@@ -262,15 +262,33 @@ exports.vnpayReturn = asyncHandler(async (req, res) => {
   const isValid = secureHash === signed;
   const responseCode = vnp_Params["vnp_ResponseCode"];
   const txnRef = vnp_Params["vnp_TxnRef"];
+  const isSuccess = isValid && responseCode === "00";
 
-  // Look up booking to get bookingId for frontend
-  const booking = await Booking.findOne({ vnpTxnRef: txnRef });
+  // Look up booking with full population for frontend display
+  const booking = await Booking.findOne({ vnpTxnRef: txnRef })
+    .populate({
+      path: "trip",
+      populate: [
+        { path: "fromStation" },
+        { path: "toStation" },
+        { path: "bus" }
+      ]
+    })
+    .populate({ path: "seats", populate: { path: "seat" } });
+
+  // Fetch tickets if payment was successful
+  let tickets = [];
+  if (isSuccess && booking) {
+    tickets = await Ticket.find({ booking: booking._id });
+  }
 
   res.json({
     isValid,
     responseCode,
     txnRef,
-    bookingId: booking?._id || null,
+    isSuccess,
+    booking: booking || null,
+    tickets,
     amount: parseInt(vnp_Params["vnp_Amount"] || "0") / 100,
     bankCode: vnp_Params["vnp_BankCode"] || null,
     transactionNo: vnp_Params["vnp_TransactionNo"] || null,
@@ -280,3 +298,4 @@ exports.vnpayReturn = asyncHandler(async (req, res) => {
       : "Dữ liệu không hợp lệ"
   });
 });
+

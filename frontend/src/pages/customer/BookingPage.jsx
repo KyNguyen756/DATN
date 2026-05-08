@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   User, Phone, Mail, CreditCard, ChevronRight, CheckCircle,
-  MapPin, Clock, Ticket, Tag, X, Loader, AlertCircle, Gift
+  MapPin, Clock, Ticket, Tag, X, Loader, AlertCircle, Gift,
+  XCircle, Home, RefreshCw
 } from 'lucide-react';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
@@ -33,6 +34,14 @@ export default function BookingPage() {
   const { state: navState } = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+
+  // ── VNPay return detection ──
+  const hasVnpReturn = !!searchParams.get('vnp_ResponseCode');
+  const vnpVerified = useRef(false); // prevent duplicate verify on strict-mode / refresh
+  const [vnpayLoading, setVnpayLoading] = useState(hasVnpReturn);
+  const [vnpayResult, setVnpayResult] = useState(null); // { isSuccess, booking, tickets, ... }
+  const [vnpayError, setVnpayError] = useState('');
 
   // Restore from sessionStorage if navigated with no state (e.g. after refresh)
   const restored = !navState ? loadFromSession() : null;
@@ -42,8 +51,32 @@ export default function BookingPage() {
   const seatIds  = bookingState?.seatIds || [];
   const seatObjs = bookingState?.seatObjs || [];
 
-  // Redirect if somehow no booking context
+  // Verify VNPay payment on mount if query params present
   useEffect(() => {
+    if (!hasVnpReturn || vnpVerified.current) return;
+    vnpVerified.current = true;
+
+    const verifyVnpay = async () => {
+      try {
+        const queryString = searchParams.toString();
+        const res = await api.get(`/vnpay/return?${queryString}`);
+        setVnpayResult(res.data);
+        if (res.data.isSuccess) {
+          clearSession();
+        }
+      } catch (err) {
+        setVnpayError(err.response?.data?.message || 'Không thể xác minh kết quả thanh toán');
+      } finally {
+        setVnpayLoading(false);
+      }
+    };
+
+    verifyVnpay();
+  }, []); // eslint-disable-line
+
+  // Normal booking flow: redirect if no booking context AND not a VNPay return
+  useEffect(() => {
+    if (hasVnpReturn) return; // don't redirect during VNPay verification
     if (!trip || seatIds.length === 0) {
       navigate('/search', { replace: true });
     } else if (navState) {
@@ -72,13 +105,14 @@ export default function BookingPage() {
   const [error, setError] = useState('');
   const [result, setResult] = useState(null); // { booking, tickets }
 
-  if (!trip || seatIds.length === 0) return null;
+  // Allow render for VNPay return even without booking context
+  if (!hasVnpReturn && (!trip || seatIds.length === 0)) return null;
 
-  // Pricing
+  // Pricing (only computed when trip context is available — not needed for VNPay return)
   const VIP_MULTIPLIER = 1.3;
-  const totalPrice = seatObjs.reduce((sum, s) => {
+  const totalPrice = trip ? (seatObjs.reduce((sum, s) => {
     return sum + (s.seat?.type === 'vip' ? Math.round(trip.price * VIP_MULTIPLIER) : trip.price);
-  }, 0) || trip.price * seatIds.length;
+  }, 0) || trip.price * seatIds.length) : 0;
 
   const finalPrice = promoData ? promoData.finalTotal : totalPrice;
   const discount = promoData ? promoData.discountAmount : 0;
@@ -160,7 +194,151 @@ export default function BookingPage() {
     }
   };
 
-  // ── Success screen ─────────────────────────────────────────────────────────
+  // ── VNPay verification states ────────────────────────────────────────────
+
+  // VNPay: loading verification
+  if (vnpayLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'var(--gray-50)'
+      }}>
+        <div className="card" style={{ padding: '48px', textAlign: 'center', maxWidth: '420px' }}>
+          <Loader size={40} style={{ animation: 'spin 1s linear infinite', color: 'var(--primary)', margin: '0 auto 16px' }} />
+          <h3 style={{ fontWeight: '800', fontSize: '18px', marginBottom: '8px' }}>Đang xác minh thanh toán...</h3>
+          <p style={{ color: 'var(--gray-500)', fontSize: '13px' }}>Vui lòng chờ trong giây lát</p>
+        </div>
+      </div>
+    );
+  }
+
+  // VNPay: network error
+  if (vnpayError) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'var(--gray-50)'
+      }}>
+        <div className="card" style={{ padding: '48px', textAlign: 'center', maxWidth: '420px' }}>
+          <div style={{
+            width: '72px', height: '72px', borderRadius: '50%',
+            background: 'rgba(239, 68, 68, 0.1)', margin: '0 auto 20px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <AlertCircle size={36} color="var(--danger)" />
+          </div>
+          <h3 style={{ fontWeight: '800', fontSize: '18px', color: 'var(--danger)', marginBottom: '8px' }}>
+            Lỗi xác minh
+          </h3>
+          <p style={{ color: 'var(--gray-500)', fontSize: '13px', marginBottom: '24px' }}>{vnpayError}</p>
+          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => navigate('/')}>
+            <Home size={16} /> Về trang chủ
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // VNPay: verified result
+  if (vnpayResult) {
+    const vnpBooking = vnpayResult.booking;
+    const vnpTrip = vnpBooking?.trip;
+    const vnpSeats = vnpBooking?.seats || [];
+    const vnpTickets = vnpayResult.tickets || [];
+    const firstTicket = vnpTickets[0];
+    const isSuccess = vnpayResult.isSuccess;
+
+    return (
+      <div style={{ background: 'var(--gray-50)', minHeight: '100vh', padding: '40px 0' }}>
+        <div className="container" style={{ maxWidth: '560px' }}>
+          <div className="card" style={{ padding: '36px', textAlign: 'center' }}>
+            <div style={{
+              width: '72px', height: '72px', borderRadius: '50%',
+              background: isSuccess ? 'var(--success-light)' : 'rgba(239, 68, 68, 0.1)',
+              margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {isSuccess
+                ? <CheckCircle size={36} color="var(--success)" />
+                : <XCircle size={36} color="var(--danger)" />
+              }
+            </div>
+            <h2 style={{ fontWeight: '900', fontSize: '22px', color: isSuccess ? 'var(--success)' : 'var(--danger)', marginBottom: '6px' }}>
+              {isSuccess ? 'Thanh toán thành công!' : 'Thanh toán thất bại'}
+            </h2>
+            <p style={{ color: 'var(--gray-500)', fontSize: '14px', marginBottom: '24px' }}>
+              {isSuccess
+                ? `${vnpTickets.length} vé đã được tạo`
+                : vnpayResult.message || 'Giao dịch không thành công. Vui lòng thử lại.'
+              }
+            </p>
+
+            {isSuccess && firstTicket?.qrCode && (
+              <img
+                src={firstTicket.qrCode}
+                alt="QR vé"
+                style={{ width: '180px', height: '180px', borderRadius: '14px', border: '3px solid var(--gray-200)', margin: '0 auto 20px', display: 'block' }}
+              />
+            )}
+
+            {/* Summary */}
+            <div style={{ background: 'var(--gray-50)', borderRadius: '12px', padding: '16px', marginBottom: '24px', textAlign: 'left' }}>
+              {[
+                ...(vnpTrip ? [
+                  ['Tuyến xe', `${vnpTrip.fromStation?.city || ''} → ${vnpTrip.toStation?.city || ''}`],
+                  ['Ngày đi', fmtDate(vnpTrip.departureTime)],
+                  ['Giờ đi', fmtTime(vnpTrip.departureTime)],
+                ] : []),
+                ['Số ghế', vnpSeats.map(s => s.seat?.seatNumber).filter(Boolean).join(', ') || `${vnpBooking?.seats?.length || 0} ghế`],
+                ['Số tiền', `${vnpayResult.amount?.toLocaleString()}đ`],
+                ['Hành khách', vnpBooking?.passengerName || '—'],
+                ['Điện thoại', vnpBooking?.passengerPhone || '—'],
+                ['Thanh toán', 'VNPay'],
+                ['Ngân hàng', vnpayResult.bankCode || '—'],
+                ['Mã GD', vnpayResult.transactionNo || '—'],
+                ['Trạng thái', isSuccess ? 'Thành công' : `Thất bại (${vnpayResult.responseCode || '?'})`],
+              ].map(([k, v]) => (
+                <div key={k} className="flex items-center justify-between" style={{ padding: '7px 0', borderBottom: '1px solid var(--gray-200)', fontSize: '13px' }}>
+                  <span style={{ color: 'var(--gray-500)' }}>{k}</span>
+                  <span style={{
+                    fontWeight: k === 'Số tiền' || k === 'Trạng thái' ? '800' : '600',
+                    color: k === 'Trạng thái'
+                      ? (isSuccess ? 'var(--success)' : 'var(--danger)')
+                      : k === 'Số tiền' ? 'var(--primary)' : 'var(--gray-800)',
+                    fontSize: k === 'Số tiền' ? '15px' : '13px',
+                    fontFamily: k === 'Mã GD' ? 'monospace' : 'inherit'
+                  }}>{v}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3">
+              {isSuccess ? (
+                <>
+                  <button className="btn btn-outline w-full" style={{ justifyContent: 'center' }} onClick={() => navigate('/my-tickets')}>
+                    <Ticket size={15} /> Xem vé
+                  </button>
+                  <button className="btn btn-primary w-full" style={{ justifyContent: 'center' }} onClick={() => navigate('/')}>
+                    Về trang chủ
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button className="btn btn-outline w-full" style={{ justifyContent: 'center' }} onClick={() => navigate('/')}>
+                    <Home size={15} /> Trang chủ
+                  </button>
+                  <button className="btn btn-primary w-full" style={{ justifyContent: 'center' }} onClick={() => navigate('/search')}>
+                    <RefreshCw size={15} /> Đặt lại
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── COD Success screen ────────────────────────────────────────────────────
 
   if (result) {
     const firstTicket = result.tickets?.[0];
