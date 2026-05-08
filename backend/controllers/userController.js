@@ -109,16 +109,41 @@ exports.changePassword = asyncHandler(async (req, res) => {
 
 // POST /api/users/avatar
 exports.uploadAvatar = asyncHandler(async (req, res) => {
-  if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-  const avatarUrl = req.file.path;
+  if (!req.user?.id) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+
+  // Lấy dữ liệu từ Cloudinary
+  const avatarUrl = req.file.path;
+  const publicId = req.file.filename;
+
+  // Tìm profile cũ
+  const oldProfile = await UserProfile.findOne({ user: req.user.id });
+
+  // Xoá avatar cũ (nếu có)
+  if (oldProfile?.avatarPublicId) {
+    await cloudinary.uploader.destroy(oldProfile.avatarPublicId);
+  }
+
+  // Update avatar mới
   const profile = await UserProfile.findOneAndUpdate(
     { user: req.user.id },
-    { avatar: avatarUrl },
+    {
+      avatar: avatarUrl,
+      avatarPublicId: publicId
+    },
     { new: true, upsert: true }
   );
 
-  res.json({ avatar: avatarUrl, profile });
+  res.json({
+    message: "Upload avatar successful",
+    avatar: avatarUrl,
+    profile
+  });
 });
 
 // GET /api/users  (admin)

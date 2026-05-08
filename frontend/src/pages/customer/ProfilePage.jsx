@@ -168,6 +168,7 @@ export default function ProfilePage() {
   }
 
   const displayName = [profile.firstName, profile.lastName].filter(Boolean).join(' ') || profile.username;
+  const avatarUrl = profile?.avatar;
   const avatarLetter = displayName[0]?.toUpperCase() || 'U';
 
   return (
@@ -182,16 +183,39 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between" style={{ position: 'relative', zIndex: 1 }}>
             <div className="flex items-center" style={{ gap: '20px' }}>
               {/* Avatar */}
-              <div style={{
-                width: '80px', height: '80px', borderRadius: '50%', flexShrink: 0,
-                background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '32px', fontWeight: '900', color: 'white',
-                border: '3px solid rgba(255,255,255,0.4)',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-              }}>
-                {avatarLetter}
-              </div>
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="avatar"
+                  style={{
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '3px solid rgba(255,255,255,0.4)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '50%',
+                  flexShrink: 0,
+                  background: 'rgba(255,255,255,0.2)',
+                  backdropFilter: 'blur(8px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '32px',
+                  fontWeight: '900',
+                  color: 'white',
+                  border: '3px solid rgba(255,255,255,0.4)',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                }}>
+                  {avatarLetter}
+                </div>
+              )}
               <div>
                 <div style={{ fontSize: '24px', fontWeight: '800', color: 'white', marginBottom: '4px' }}>
                   {displayName}

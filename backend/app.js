@@ -13,6 +13,7 @@ const statsRoutes = require("./routes/statsRoutes");
 const promotionRoutes = require("./routes/promotionRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const newsRoutes = require("./routes/newsRoutes");
+const vnpayRoutes = require("./routes/vnpayRoutes");
 
 
 const app = express();
@@ -37,6 +38,7 @@ app.use("/api/stats", statsRoutes);
 app.use("/api/promotions", promotionRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/news", newsRoutes);
+app.use("/api/vnpay", vnpayRoutes);
 
 
 // Central error handler — catches errors thrown by asyncHandler

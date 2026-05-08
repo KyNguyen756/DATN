@@ -76,7 +76,14 @@ const bookingSchema = new mongoose.Schema({
   note: { type: String, default: "" },
 
   // Printed receipt number for counter sales
-  receiptNumber: { type: String, default: null }
+  receiptNumber: { type: String, default: null },
+
+  // ─── VNPay payment tracking ───
+  vnpTxnRef: { type: String, default: null, unique: true, sparse: true },
+  vnpTransactionNo: { type: String, default: null },
+  vnpBankCode: { type: String, default: null },
+  vnpResponseCode: { type: String, default: null },
+  paidAt: { type: Date, default: null }
 
 }, { timestamps: true });
 

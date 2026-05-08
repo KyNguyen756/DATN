@@ -20,6 +20,8 @@ const userProfileSchema = new mongoose.Schema({
 
   avatar: String,
 
+  avatarPublicID: String,
+
   dateOfBirth: Date,
 
   address: String

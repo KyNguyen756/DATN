@@ -129,7 +129,23 @@ exports.checkout = asyncHandler(async (req, res) => {
     { status: "booked", lockedBy: null, lockedUntil: null }
   );
 
-  // 7. Generate tickets for each seat (atomic: all or nothing via Promise.all)
+  // 7. For VNPay: skip ticket generation (IPN will create tickets after payment confirmation)
+  if (paymentMethod === "vnpay") {
+    return res.status(201).json({
+      booking,
+      tickets: [],
+      summary: {
+        totalPrice,
+        discountAmount,
+        finalPrice,
+        promoApplied: !!promoCode
+      },
+      requiresPayment: true,
+      paymentMethod: "vnpay"
+    });
+  }
+
+  // 8. Generate tickets for each seat (COD / other methods — immediate)
   const ticketDocs = [];
   for (const seatDoc of seats) {
     const code = await generateUniqueTicketCode();
@@ -146,7 +162,7 @@ exports.checkout = asyncHandler(async (req, res) => {
 
   const createdTickets = await Ticket.insertMany(ticketDocs);
 
-  // 8. Return enriched response
+  // 9. Return enriched response
   res.status(201).json({
     booking,
     tickets: createdTickets,

@@ -14,8 +14,8 @@ const fmtDate = (iso) =>
 
 const PAYMENT_METHODS = [
   { id: 'cod', label: 'COD - Nhận tại quầy', icon: CreditCard, note: 'Thanh toán khi lên xe' },
-  { id: 'vnpay', label: 'VNPay', icon: CreditCard, note: 'Chuyển hướng tới VNPay (Sắp có)' },
-  { id: 'momo', label: 'Ví MoMo', icon: CreditCard, note: 'Quét QR MoMo (Sắp có)' },
+  { id: 'vnpay', label: 'VNPay', icon: CreditCard, note: 'Thanh toán qua VNPay (ATM/Visa/MasterCard/QR)' },
+  { id: 'momo', label: 'Ví MoMo', icon: CreditCard, note: 'Quét QR MoMo (Sắp có)', disabled: true },
 ];
 
 const SS_KEY = 'booking_state';
@@ -134,6 +134,23 @@ export default function BookingPage() {
         promoCode: promoCode || undefined,
       });
 
+      // VNPay flow: redirect to VNPay payment gateway
+      if (res.data.requiresPayment && res.data.paymentMethod === 'vnpay') {
+        try {
+          const vnpayRes = await api.post('/vnpay/create-payment-url', {
+            bookingId: res.data.booking._id
+          });
+          // Redirect to VNPay gateway
+          window.location.href = vnpayRes.data.paymentUrl;
+          return;
+        } catch (vnpayErr) {
+          setError(vnpayErr.response?.data?.message || 'Không thể tạo liên kết thanh toán VNPay.');
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      // COD flow: show success immediately
       clearSession();
       setResult(res.data);
     } catch (err) {
@@ -296,10 +313,14 @@ export default function BookingPage() {
                     <label key={m.id} style={{
                       display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px',
                       border: `2px solid ${paymentMethod === m.id ? 'var(--primary)' : 'var(--gray-200)'}`,
-                      borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
+                      borderRadius: '12px', cursor: m.disabled ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
                       background: paymentMethod === m.id ? 'var(--primary-bg)' : 'white',
+                      opacity: m.disabled ? 0.5 : 1,
                     }}>
-                      <input type="radio" name="payment" value={m.id} checked={paymentMethod === m.id} onChange={() => setPaymentMethod(m.id)} style={{ accentColor: 'var(--primary)' }} />
+                      <input type="radio" name="payment" value={m.id} checked={paymentMethod === m.id}
+                        onChange={() => !m.disabled && setPaymentMethod(m.id)}
+                        disabled={m.disabled}
+                        style={{ accentColor: 'var(--primary)' }} />
                       <div>
                         <div style={{ fontWeight: '700', fontSize: '14px' }}>{m.label}</div>
                         <div style={{ fontSize: '11px', color: 'var(--gray-400)' }}>{m.note}</div>

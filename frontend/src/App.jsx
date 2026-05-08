@@ -14,6 +14,7 @@ import ProfilePage from './pages/customer/ProfilePage';
 import LoginPage from './pages/customer/LoginPage';
 import NewsListPage from './pages/customer/NewsListPage';
 import NewsDetailPage from './pages/customer/NewsDetailPage';
+import PaymentReturn from './pages/customer/PaymentReturn';
 
 // Staff Pages
 import StaffDashboard from './pages/staff/StaffDashboard';
@@ -47,6 +48,7 @@ function App() {
           <Route path="login" element={<LoginPage />} />
           <Route path="news" element={<NewsListPage />} />
           <Route path="news/:slug" element={<NewsDetailPage />} />
+          <Route path="payment-return" element={<PaymentReturn />} />
 
           {/* Require login */}
           <Route path="booking" element={
